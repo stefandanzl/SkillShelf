@@ -11,7 +11,8 @@
 	import { pb } from '$lib/pocketbase.svelte';
 	import { submitAnswer } from '$lib/api';
 	import { registerHotkey, formatBinding, loadUserHotkeys } from '$lib/hotkeys';
-	import type { Card, CardProgress } from '$lib/types';
+	// import type { Card, CardProgress } from '$lib/types';
+	import type { CardsRecord, CardProgressRecord } from '$lib/pocketbase-types.js';
 
 	let { data } = $props();
 
@@ -25,8 +26,11 @@
 	let showResult = $state(false);
 	let done = $state(false);
 	let submitting = $state(false);
+	let flashcardRef: { triggerSwipe: (direction: 'left' | 'right') => Promise<void> } | null = $state(null);
 
-	const currentEntry = $derived(dueCards[currentIndex] as { card: Card; progress: CardProgress | null } | undefined);
+	const currentEntry = $derived(
+		dueCards[currentIndex] as { card: CardsRecord; progress: CardProgressRecord | null } | undefined
+	);
 	const currentCard = $derived(currentEntry?.card);
 	const currentProgress = $derived(currentEntry?.progress ?? null);
 	const progressPct = $derived(dueCards.length > 0 ? (currentIndex / dueCards.length) * 100 : 0);
@@ -48,9 +52,17 @@
 		}
 	}
 
-	async function handleAnswer(wasCorrect: boolean) {
+	async function handleAnswer(wasCorrect: boolean, skipAnimation = false) {
 		if (!currentCard || submitting) return;
 		submitting = true;
+
+		// Trigger swipe animation if not skipping (for hotkey/button presses)
+		if (!skipAnimation && flashcardRef) {
+			const direction = wasCorrect ? 'right' : 'left';
+			await flashcardRef.triggerSwipe(direction);
+			// Animation and callback are complete, now submit and move to next
+		}
+
 		try {
 			await submitAnswer(pb as any, currentCard, currentProgress, wasCorrect);
 		} catch (e) {
@@ -150,14 +162,14 @@
 		};
 	});
 
-	function handleSwipeLeft() {
+	async function handleSwipeLeft() {
 		if (!showResult) return;
-		handleAnswer(false);
+		await handleAnswer(false, true);
 	}
 
-	function handleSwipeRight() {
+	async function handleSwipeRight() {
 		if (!showResult) return;
-		handleAnswer(true);
+		await handleAnswer(true, true);
 	}
 </script>
 
@@ -230,6 +242,7 @@
 		<div class="study__card-area" onfocus={(e) => e.currentTarget?.blur()}>
 			{#if currentCard}
 				<Flashcard
+					bind:this={flashcardRef}
 					front={currentCard.front}
 					back={currentCard.back}
 					level={currentProgress?.level ?? 1}
@@ -243,9 +256,8 @@
 		<div class="study__actions">
 			{#if !showResult}
 				<PillButton
-					onclick={(e) => {
+					onclick={() => {
 						showAnswer();
-						e.currentTarget?.blur();
 					}}
 				>
 					{$t('study.show_answer')}
@@ -255,9 +267,8 @@
 				<div class="study__result-buttons">
 					<PillButton
 						variant="danger-outline"
-						onclick={(e) => {
+						onclick={() => {
 							handleAnswer(false);
-							e.currentTarget?.blur();
 						}}
 						fullWidth={false}
 						width="calc(33.33% - 8px)"
@@ -280,9 +291,8 @@
 					</PillButton>
 					<PillButton
 						variant="secondary"
-						onclick={(e) => {
+						onclick={() => {
 							handleSkip();
-							e.currentTarget?.blur();
 						}}
 						fullWidth={false}
 						width="calc(33.33% - 8px)"
@@ -304,9 +314,8 @@
 						<span class="study__key-hint">S</span>
 					</PillButton>
 					<PillButton
-						onclick={(e) => {
+						onclick={() => {
 							handleAnswer(true);
-							e.currentTarget?.blur();
 						}}
 						fullWidth={false}
 						width="calc(33.33% - 8px)"
@@ -392,6 +401,7 @@
 		border-radius: 4px;
 		color: var(--color-text-secondary);
 		margin-left: var(--space-xs);
+		display: none;
 	}
 
 	.study__done-content {

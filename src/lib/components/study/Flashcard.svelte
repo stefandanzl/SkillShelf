@@ -38,6 +38,60 @@
     'var(--color-surface)'
   );
   const rotation = $derived(Math.max(-15, Math.min(15, dragX / 10)));
+
+  // Expose swipe animation function - returns promise that resolves when animation completes
+  let swipeAnimationEnd: (() => void) | null = null;
+  let animationCompletePromise: Promise<void> | null = null;
+  let resolveAnimation: (() => void) | null = null;
+
+  export function triggerSwipe(direction: 'left' | 'right'): Promise<void> {
+    const targetX = direction === 'left' ? -500 : 500;
+    const duration = 400;
+    const startTime = performance.now();
+    const startX_anim = dragX;
+    dragging = true;
+
+    // Create a promise that resolves when animation completes
+    animationCompletePromise = new Promise(resolve => {
+      resolveAnimation = resolve;
+
+      function animate(currentTime: number) {
+        const elapsed = currentTime - startTime;
+        const progress = Math.min(elapsed / duration, 1);
+
+        // Ease out cubic
+        const ease = 1 - Math.pow(1 - progress, 3);
+        dragX = startX_anim + (targetX - startX_anim) * ease;
+
+        if (progress < 1) {
+          swipeAnimationEnd = () => {
+            cancelAnimationFrame(animationId);
+            requestAnimationFrame(animate);
+          };
+          var animationId = requestAnimationFrame(animate);
+        } else {
+          // Animation complete
+          swipeAnimationEnd = null;
+          dragging = false;
+          dragX = 0;
+          if (direction === 'left') {
+            onswipeleft?.();
+          } else {
+            onswiperight?.();
+          }
+          resolve();
+        }
+      }
+
+      // Cancel any existing animation
+      if (swipeAnimationEnd) {
+        swipeAnimationEnd();
+      }
+      requestAnimationFrame(animate);
+    });
+
+    return animationCompletePromise;
+  }
 </script>
 
 <div
@@ -95,7 +149,7 @@
   .card-inner {
     position: relative;
     transform-style: preserve-3d;
-    transition: transform 0.45s ease, background 0.2s ease;
+    transition: background 0.2s ease;
     width: 100%;
     height: 100%;
     min-height: 300px;
