@@ -88,8 +88,13 @@ body {
 }
 
 a {
-  color: inherit;
+  color: var(--color-primary);
   text-decoration: none;
+}
+
+a:hover {
+  opacity: 0.8;
+  text-decoration: underline;
 }
 
 button {

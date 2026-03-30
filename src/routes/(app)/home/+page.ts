@@ -8,7 +8,14 @@ import type { CardsRecord, CardProgressRecord, BoxesRecord } from '$lib/pocketba
 
 export const load: PageLoad = async () => {
 	// Skip on server - let client handle it
-	if (!browser || !pb.authStore.isValid) {
+	if (!browser) {
+		return { boxSummaries: [] };
+	}
+
+	// Reload cookie to get latest auth state (fixes race after login)
+	pb.authStore.loadFromCookie(document.cookie);
+
+	if (!pb.authStore.isValid) {
 		return { boxSummaries: [] };
 	}
 

@@ -1,14 +1,29 @@
 <script lang="ts">
   import { t } from '$lib/i18n';
   import { enhance } from '$app/forms';
-  import { goto } from '$app/navigation';
+  import { goto, invalidateAll } from '$app/navigation';
   import TopBar from '$lib/components/ui/TopBar.svelte';
   import Avatar from '$lib/components/ui/Avatar.svelte';
   import SettingsRow from '$lib/components/ui/SettingsRow.svelte';
   import SettingsGroup from '$lib/components/ui/SettingsGroup.svelte';
   import PillButton from '$lib/components/ui/PillButton.svelte';
+  import { pb } from '$lib/pocketbase.svelte';
 
   let { data, form } = $props();
+
+  async function handleSignOut() {
+    // Clear client-side auth
+    pb.authStore.clear();
+
+    // Clear the cookie
+    document.cookie = 'pb_auth=; path=/; max-age=0';
+
+    // Invalidate all cached data
+    await invalidateAll();
+
+    // Go to landing page
+    goto('/');
+  }
 
   const username = $derived(data?.user?.name || 'User');
   const email = $derived(data?.user?.email || '');
@@ -67,7 +82,7 @@
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
           {/snippet}
         </SettingsRow>
-        <SettingsRow label={$t('profile.sign_out')} onclick={() => goto('/sign/out')}>
+        <SettingsRow label={$t('profile.sign_out')} onclick={handleSignOut}>
           {#snippet icon()}
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>

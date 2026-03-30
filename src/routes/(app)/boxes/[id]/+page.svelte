@@ -13,6 +13,7 @@
   import { pb } from '$lib/pocketbase.svelte';
   import { deleteBox } from '$lib/api';
   import { BOX_COLOR_MAP } from '$lib/leitner';
+	import type { CardsRecord } from '$lib/pocketbase-types.js';
 
   let { data } = $props();
 
@@ -37,7 +38,7 @@
   let deleting = $state(false);
 
   const filteredCards = $derived(
-    cards.filter((c: any) => {
+    cards.filter((c: CardsRecord) => {
       const matchSearch = !searchQuery || c.front.toLowerCase().includes(searchQuery.toLowerCase());
       const matchLevel = selectedLevels.length === 0 || selectedLevels.includes((progressMap[c.id]?.level ?? 1));
       return matchSearch && matchLevel;
@@ -106,17 +107,29 @@
     <button class="box-detail__dot" class:box-detail__dot--active={currentPage === 1} onclick={() => currentPage = 1}></button>
   </div>
 
-  <!-- Learn button -->
+  <!-- Learn/Create button -->
   <div class="box-detail__actions">
-    <PillButton
-      variant={dueCount === 0 ? 'disabled' : 'primary'}
-      onclick={() => goto(`/boxes/${boxId}/study`)}
-    >
-      <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <polygon points="5 3 19 12 5 21 5 3"/>
-      </svg>
-      {$t('box.learn_button')}
-    </PillButton>
+    {#if totalCards === 0}
+      <PillButton
+        variant="primary"
+        onclick={() => goto(`/boxes/${boxId}/cards/create`)}
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
+        </svg>
+        Add Cards
+      </PillButton>
+    {:else}
+      <PillButton
+        variant={dueCount === 0 ? 'disabled' : 'primary'}
+        onclick={() => goto(`/boxes/${boxId}/study`)}
+      >
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <polygon points="5 3 19 12 5 21 5 3"/>
+        </svg>
+        {$t('box.learn_button')}
+      </PillButton>
+    {/if}
   </div>
 
   <!-- Search & Select Section -->

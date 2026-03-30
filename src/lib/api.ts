@@ -48,7 +48,8 @@ export async function updateBox(
 	return pb.collection('boxes').update(id, data);
 }
 
-export async function deleteBox(pb: TypedPocketBase, id: string): Promise<void> {
+export async function deleteBox(pb: TypedPocketBase, id?: string): Promise<void> {
+	if (!id) throw new Error('id undefined!');
 	await pb.collection('boxes').delete(id);
 }
 
