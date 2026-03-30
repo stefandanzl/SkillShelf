@@ -9,12 +9,12 @@
 
 	$effect(() => {
 		if (!page.data.user) goto('/');
-		if (page.data.user?.verified) goto('/app');
+		if (page.data.user?.verified) goto('/home');
 
 		pb.collection('users').subscribe(page.data.user?.id, (e) => {
 			if (dev) console.log(`verify: action: ${e.action} verified=${e.record.verified}`);
 			if (e.record.verified) {
-				goto('/app');
+				goto('/home');
 			}
 		});
 

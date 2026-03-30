@@ -2,7 +2,7 @@ import { redirect } from '@sveltejs/kit';
 
 export const load = async ({ locals }) => {
 	if (locals.user) {
-		redirect(307, '/app');
+		redirect(307, '/home');
 	}
 };
 
@@ -20,9 +20,9 @@ export const actions = {
 			return { error: err.message || 'Failed to authenticate.' };
 		}
 
-		// Redirect to /app if verified, otherwise to /verify
+		// Redirect to home if verified, otherwise to /verify
 		if (locals.pb.authStore.model?.verified) {
-			redirect(307, '/app');
+			redirect(307, '/home');
 		} else {
 			redirect(307, '/verify');
 		}

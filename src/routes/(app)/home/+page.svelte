@@ -94,7 +94,7 @@
 			<button class="topic-card" onclick={() => goto(`/boxes/${summary.box.id}`)}>
 				<div
 					class="topic-card__accent"
-					style="background: {BOX_COLOR_MAP[summary.box.color] ?? 'var(--color-primary)'}"
+					style="background: {BOX_COLOR_MAP[summary.box.color ?? BoxesColorOptions.blue] ?? 'var(--color-primary)'}"
 				></div>
 				<div class="topic-card__body">
 					<div class="topic-card__top">
@@ -102,7 +102,7 @@
 						<CircularProgress
 							value={summary.completionPct}
 							size={44}
-							color={BOX_COLOR_MAP[summary.box.color] ?? 'var(--color-primary)'}
+							color={BOX_COLOR_MAP[summary.box.color ?? BoxesColorOptions.blue] ?? 'var(--color-primary)'}
 						/>
 					</div>
 					<div class="topic-card__bottom">

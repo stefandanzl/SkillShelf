@@ -1,5 +1,6 @@
 <script lang="ts">
   import { t } from '$lib/i18n';
+  import { enhance } from '$app/forms';
   import { goto } from '$app/navigation';
   import TopBar from '$lib/components/ui/TopBar.svelte';
   import Avatar from '$lib/components/ui/Avatar.svelte';
@@ -7,17 +8,12 @@
   import SettingsGroup from '$lib/components/ui/SettingsGroup.svelte';
   import PillButton from '$lib/components/ui/PillButton.svelte';
 
-  let { data } = $props();
+  let { data, form } = $props();
 
   const username = $derived(data?.user?.name || 'User');
   const email = $derived(data?.user?.email || '');
 
   let showDeleteConfirm = $state(false);
-
-  function handleSignOut() {
-    // TODO: PocketBase sign out
-    goto('/sign/in');
-  }
 </script>
 
 <div class="profile">
@@ -71,7 +67,7 @@
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
           {/snippet}
         </SettingsRow>
-        <SettingsRow label={$t('profile.sign_out')} onclick={handleSignOut}>
+        <SettingsRow label={$t('profile.sign_out')} onclick={() => goto('/sign/out')}>
           {#snippet icon()}
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M9 21H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/>

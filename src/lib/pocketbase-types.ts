@@ -165,6 +165,7 @@ export enum UsersLanguageOptions {
 	"de" = "de",
 }
 export type UsersRecord = {
+	admin?: boolean
 	avatar?: FileNameString
 	created: IsoAutoDateString
 	email: string
