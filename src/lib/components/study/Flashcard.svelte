@@ -149,7 +149,7 @@
   .card-inner {
     position: relative;
     transform-style: preserve-3d;
-    transition: background 0.2s ease;
+    transition: background 0.2s ease, transform 0.2s ease;
     width: 100%;
     height: 100%;
     min-height: 300px;

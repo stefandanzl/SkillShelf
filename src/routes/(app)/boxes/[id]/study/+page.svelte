@@ -163,7 +163,7 @@
 	});
 
 	async function handleSwipeLeft() {
-		if (!showResult) return;
+		// if (!showResult) return;
 		await handleAnswer(false, true);
 	}
 
