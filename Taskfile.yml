@@ -1,0 +1,46 @@
+# https://taskfile.dev
+version: '3'
+
+dotenv: [.env]
+
+env:
+  PUBLIC_POCKETBASE_URL: http://localhost:8090
+
+tasks:
+  default:
+    cmds:
+      - task: dev
+      # - task: pb
+
+  dev:
+    cmds:
+      - npm run dev
+
+  build:
+    cmds:
+      - npm run build
+
+  pb:
+    dir: pocketbase
+    cmd: ./pocketbase.exe serve
+
+  types:
+    cmd: npx pocketbase-typegen --db ./pocketbase/pb_data/data.db --out ./src/lib/pocketbase-types.ts
+
+  npm-install:
+    cmds:
+      - npm i
+      - cp .env.example .env
+
+  pb-download:
+    dir: pocketbase
+    cmd: wget https://cdn.danzl.it/apps/pocketbase.exe
+
+  install:
+    deps: [npm-install, pb-download]
+
+  example:
+    aliases:
+      - seed
+      - testdata
+    cmd: node pocketbase/seed-en.mjs
