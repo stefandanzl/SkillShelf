@@ -1,5 +1,6 @@
 <script lang="ts">
   import { t } from '$lib/i18n';
+  import { goto } from '$app/navigation';
   import TopBar from '$lib/components/ui/TopBar.svelte';
   import SettingsRow from '$lib/components/ui/SettingsRow.svelte';
   import SettingsGroup from '$lib/components/ui/SettingsGroup.svelte';
@@ -78,6 +79,22 @@
         {/snippet}
         {#snippet right()}
           <span class="settings__lang-label">{languageLabel}</span>
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        {/snippet}
+      </SettingsRow>
+    </section>
+
+    <!-- Hotkeys -->
+    <section class="settings__section">
+      <SettingsRow label={$t('settings.hotkeys')} onclick={() => goto('/settings/hotkeys')}>
+        {#snippet icon()}
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <rect x="2" y="4" width="20" height="16" rx="2"/>
+            <path d="M6 8h.01"/><path d="M10 8h.01"/><path d="M14 8h.01"/><path d="M18 8h.01"/>
+            <path d="M6 12h.01"/><path d="M10 12h.01"/><path d="M14 12h.01"/><path d="M18 12h.01"/>
+          </svg>
+        {/snippet}
+        {#snippet right()}
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
         {/snippet}
       </SettingsRow>

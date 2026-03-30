@@ -6,6 +6,7 @@
   import { waitLocale } from 'svelte-i18n';
   import { browser } from '$app/environment';
   import { theme } from '$lib/stores/theme';
+  import { initHotkeys } from '$lib/hotkeys';
   // subscribing ensures the store initializes and applies the theme
   theme.subscribe(() => {});
 
@@ -29,6 +30,7 @@
 
   onMount(async () => {
     await waitLocale();
+    initHotkeys();
     isReady = true;
   });
 </script>

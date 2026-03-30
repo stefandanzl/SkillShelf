@@ -2,6 +2,7 @@
   import { t } from '$lib/i18n';
   import { page } from '$app/stores';
   import { goto, invalidateAll } from '$app/navigation';
+  import { onMount } from 'svelte';
   import TopBar from '$lib/components/ui/TopBar.svelte';
   import IconButton from '$lib/components/ui/IconButton.svelte';
   import ProgressBar from '$lib/components/ui/ProgressBar.svelte';
@@ -9,6 +10,7 @@
   import Flashcard from '$lib/components/study/Flashcard.svelte';
   import { pb } from '$lib/pocketbase.svelte';
   import { submitAnswer } from '$lib/api';
+  import { registerHotkey, formatBinding } from '$lib/hotkeys';
   import type { Card, CardProgress } from '$lib/types';
 
   let { data } = $props();
@@ -62,6 +64,52 @@
     await invalidateAll();
     goto(`/boxes/${boxId}`);
   }
+
+  // Register hotkeys on mount
+  onMount(() => {
+    const unsubscribes = [
+      // Flip card / show answer (Space)
+      registerHotkey('study.flip_card', () => {
+        if (!showResult && !done) {
+          showAnswer();
+        }
+      }),
+
+      // Answer: Again/Incorrect (A)
+      registerHotkey('study.answer_again', () => {
+        if (showResult && !done) {
+          handleAnswer(false);
+        }
+      }, () => showResult && !done),
+
+      // Answer: Easy/Correct (D)
+      registerHotkey('study.answer_easy', () => {
+        if (showResult && !done) {
+          handleAnswer(true);
+        }
+      }, () => showResult && !done),
+
+      // Next card (N)
+      registerHotkey('study.next_card', () => {
+        if (!isLast && !done) {
+          nextCard();
+        }
+      }),
+
+      // Previous card (P)
+      registerHotkey('study.previous_card', () => {
+        if (currentIndex > 0 && !done) {
+          currentIndex -= 1;
+          flipped = false;
+          showResult = false;
+        }
+      })
+    ];
+
+    return () => {
+      unsubscribes.forEach(fn => fn());
+    };
+  });
 
   function handleSwipeLeft() {
     if (!showResult) return;
@@ -132,6 +180,7 @@
       {#if !showResult}
         <PillButton onclick={showAnswer}>
           {$t('study.show_answer')}
+          <span class="study__key-hint">Space</span>
         </PillButton>
       {:else}
         <div class="study__result-buttons">
@@ -139,13 +188,15 @@
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
               <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
             </svg>
-            {$t('study.incorrect')}
+            <span>{$t('study.incorrect')}</span>
+            <span class="study__key-hint">A</span>
           </PillButton>
           <PillButton onclick={() => handleAnswer(true)} fullWidth={false} width="calc(50% - 6px)" disabled={submitting}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
               <polyline points="20 6 9 17 4 12"/>
             </svg>
-            {$t('study.correct')}
+            <span>{$t('study.correct')}</span>
+            <span class="study__key-hint">D</span>
           </PillButton>
         </div>
       {/if}
@@ -188,6 +239,15 @@
   .study__result-buttons {
     display: flex;
     gap: 12px;
+  }
+
+  .study__key-hint {
+    font-size: var(--font-size-xs);
+    padding: 2px 6px;
+    background: var(--color-surface-alt);
+    border-radius: 4px;
+    color: var(--color-text-secondary);
+    margin-left: var(--space-xs);
   }
 
   .study__done-content {

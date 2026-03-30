@@ -74,6 +74,7 @@
     "language": "Sprache",
     "cloud_sync": "Cloud-Sync",
     "trash": "Papierkorb",
+    "hotkeys": "Tastenkürzel",
     "section_help": "Hilfe & Support",
     "support": "Support",
     "tutorial": "Tutorial",
@@ -95,5 +96,20 @@
     "back": "Zurück",
     "confirm": "Bestätigen",
     "app_name": "SkillShelf"
+  },
+  "hotkeys": {
+    "study_answer_again": "Antwort: Nochmal",
+    "study_answer_hard": "Antwort: Schwer",
+    "study_answer_easy": "Antwort: Einfach",
+    "study_flip_card": "Karte umdrehen",
+    "study_next_card": "Nächste Karte",
+    "study_previous_card": "Vorherige Karte",
+    "nav_go_home": "Zur Startseite",
+    "nav_go_back": "Zurück",
+    "nav_go_forward": "Vor",
+    "general_search": "Suche öffnen",
+    "general_settings": "Einstellungen öffnen",
+    "general_create": "Neu erstellen",
+    "general_help": "Hilfe anzeigen"
   }
 }
