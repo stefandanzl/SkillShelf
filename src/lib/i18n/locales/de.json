@@ -1,0 +1,99 @@
+{
+  "nav": {
+    "home": "Startseite",
+    "profile": "Profil",
+    "settings": "Einstellungen"
+  },
+  "home": {
+    "greeting": "Hallo,",
+    "no_cards_due": "Keine Karten fällig heute",
+    "cards_due": "{count} Karten fällig"
+  },
+  "box": {
+    "add_title": "Neue Box hinzufügen",
+    "tab_manual": "Manuell",
+    "tab_ai": "Mit KI",
+    "tab_import": "Importieren",
+    "name_label": "Box-Name",
+    "name_placeholder": "Box-Name eingeben",
+    "name_max": "0/80",
+    "add_button": "Box hinzufügen",
+    "learn_button": "Karten lernen",
+    "search_section": "Suchen & Auswählen",
+    "cards_found": "Karten gefunden",
+    "settings_title": "Box-Einstellungen",
+    "learn_direction": "Lernrichtung",
+    "tts": "Text-to-Speech",
+    "color": "Farbe",
+    "import": "Importieren",
+    "export": "Exportieren",
+    "rename": "Umbenennen",
+    "delete": "Löschen",
+    "ai_category": "Was möchtest du lernen?",
+    "create_with_ai": "Box mit KI erstellen"
+  },
+  "card": {
+    "add_title": "Neue Karte hinzufügen",
+    "edit_title": "Karte bearbeiten",
+    "front_label": "Vorderseite",
+    "front_placeholder": "Inhalt der Vorderseite",
+    "back_label": "Rückseite",
+    "back_placeholder": "Inhalt der Rückseite",
+    "delete_button": "Karte löschen",
+    "level_prefix": "Stufe"
+  },
+  "study": {
+    "show_answer": "Antwort zeigen",
+    "correct": "Richtig",
+    "incorrect": "Falsch",
+    "card_counter": "{current}/{total}"
+  },
+  "profile": {
+    "title": "Profil",
+    "section_account": "Konto",
+    "change_password": "Passwort ändern",
+    "sign_out": "Abmelden",
+    "delete_account": "Konto löschen",
+    "personal_info_title": "Persönliche Daten",
+    "name": "Name",
+    "email": "E-Mail",
+    "birthday": "Geburtstag",
+    "role": "Rolle",
+    "country": "Land",
+    "pick_date": "Datum auswählen",
+    "select": "Auswählen",
+    "pro_subscription": "Pro-Abonnement"
+  },
+  "settings": {
+    "title": "Einstellungen",
+    "theme": "Design",
+    "theme_auto": "Auto",
+    "theme_light": "Hell",
+    "theme_dark": "Dunkel",
+    "reminder": "Erinnerung",
+    "language": "Sprache",
+    "cloud_sync": "Cloud-Sync",
+    "trash": "Papierkorb",
+    "section_help": "Hilfe & Support",
+    "support": "Support",
+    "tutorial": "Tutorial",
+    "faq": "FAQ",
+    "news": "Neuigkeiten"
+  },
+  "import": {
+    "csv": "CSV",
+    "csv_desc": "Nur Text (keine Bilder)",
+    "excel": "Excel",
+    "excel_desc": "Nur Text (keine Bilder)",
+    "leitner": "Leitner-Container",
+    "leitner_desc": "Text und Bilder"
+  },
+  "common": {
+    "cancel": "Abbrechen",
+    "save": "Speichern",
+    "close": "Schließen",
+    "back": "Zurück",
+    "confirm": "Bestätigen",
+    "app_name": "SkillShelf"
+  }
+}

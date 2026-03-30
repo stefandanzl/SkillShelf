@@ -1,0 +1,99 @@
+{
+  "nav": {
+    "home": "Home",
+    "profile": "Profile",
+    "settings": "Settings"
+  },
+  "home": {
+    "greeting": "Hello,",
+    "no_cards_due": "You have no cards due today",
+    "cards_due": "{count} cards due"
+  },
+  "box": {
+    "add_title": "Add New Box",
+    "tab_manual": "Manual",
+    "tab_ai": "With AI",
+    "tab_import": "Import",
+    "name_label": "Box Name",
+    "name_placeholder": "Enter box name here",
+    "name_max": "0/80",
+    "add_button": "Add Box",
+    "learn_button": "Learn Cards",
+    "search_section": "Search & Select",
+    "cards_found": "Cards found",
+    "settings_title": "Box Settings",
+    "learn_direction": "Learning Direction",
+    "tts": "Text-to-Speech",
+    "color": "Color",
+    "import": "Import",
+    "export": "Export",
+    "rename": "Rename",
+    "delete": "Delete",
+    "ai_category": "What do you want to learn?",
+    "create_with_ai": "Create Box with AI"
+  },
+  "card": {
+    "add_title": "Add New Card",
+    "edit_title": "Edit Card",
+    "front_label": "Front",
+    "front_placeholder": "Enter front content here",
+    "back_label": "Back",
+    "back_placeholder": "Enter back content here",
+    "delete_button": "Delete Card",
+    "level_prefix": "Level"
+  },
+  "study": {
+    "show_answer": "Show Answer",
+    "correct": "Correct",
+    "incorrect": "Incorrect",
+    "card_counter": "{current}/{total}"
+  },
+  "profile": {
+    "title": "Profile",
+    "section_account": "Account",
+    "change_password": "Change Password",
+    "sign_out": "Sign Out",
+    "delete_account": "Delete Account",
+    "personal_info_title": "Personal Information",
+    "name": "Name",
+    "email": "Email",
+    "birthday": "Birthday",
+    "role": "Role",
+    "country": "Country",
+    "pick_date": "Select date",
+    "select": "Select",
+    "pro_subscription": "Pro Subscription"
+  },
+  "settings": {
+    "title": "Settings",
+    "theme": "Theme",
+    "theme_auto": "Auto",
+    "theme_light": "Light",
+    "theme_dark": "Dark",
+    "reminder": "Reminder",
+    "language": "Language",
+    "cloud_sync": "Cloud Sync",
+    "trash": "Trash",
+    "section_help": "Help & Support",
+    "support": "Get Support",
+    "tutorial": "Tutorial",
+    "faq": "FAQ",
+    "news": "News"
+  },
+  "import": {
+    "csv": "CSV",
+    "csv_desc": "Text content only (no images)",
+    "excel": "Excel",
+    "excel_desc": "Text content only (no images)",
+    "leitner": "Leitner Container",
+    "leitner_desc": "Text content and images"
+  },
+  "common": {
+    "cancel": "Cancel",
+    "save": "Save",
+    "close": "Close",
+    "back": "Back",
+    "confirm": "Confirm",
+    "app_name": "SkillShelf"
+  }
+}
