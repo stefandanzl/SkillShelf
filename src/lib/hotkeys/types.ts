@@ -1,9 +1,9 @@
 // All possible hotkey actions (grouped by feature area)
 export type HotkeyAction =
 	// Study mode
-	| 'study.answer_again'
-	| 'study.answer_hard'
-	| 'study.answer_easy'
+	| 'study.answer_correct'
+	| 'study.answer_wrong'
+	| 'study.answer_skip'
 	| 'study.flip_card'
 	| 'study.next_card'
 	| 'study.previous_card'
@@ -58,9 +58,9 @@ export function getHotkeyI18nKey(action: HotkeyAction): string {
 // Group actions for UI organization
 export const HotkeyGroups: Record<string, HotkeyAction[]> = {
 	Study: [
-		'study.answer_again',
-		'study.answer_hard',
-		'study.answer_easy',
+		'study.answer_correct',
+		'study.answer_wrong',
+		'study.answer_skip',
 		'study.flip_card',
 		'study.next_card',
 		'study.previous_card'

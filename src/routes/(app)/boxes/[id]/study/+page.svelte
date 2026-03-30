@@ -37,6 +37,17 @@
     showResult = true;
   }
 
+  function toggleFlip() {
+    if (done) return;
+    // If showing result, flip back to front; otherwise show answer
+    if (showResult) {
+      showResult = false;
+      flipped = false;  // Also flip the card back to front
+    } else {
+      showAnswer();
+    }
+  }
+
   async function handleAnswer(wasCorrect: boolean) {
     if (!currentCard || submitting) return;
     submitting = true;
@@ -47,6 +58,11 @@
     } finally {
       submitting = false;
     }
+    nextCard();
+  }
+
+  function handleSkip() {
+    if (!currentCard || submitting) return;
     nextCard();
   }
 
@@ -68,26 +84,31 @@
   // Register hotkeys on mount
   onMount(() => {
     const unsubscribes = [
-      // Flip card / show answer (Space)
+      // Flip card / toggle (Space, Enter) - works anytime
       registerHotkey('study.flip_card', () => {
-        if (!showResult && !done) {
-          showAnswer();
-        }
-      }),
+        toggleFlip();
+      }, () => !done),
 
-      // Answer: Again/Incorrect (A)
-      registerHotkey('study.answer_again', () => {
+      // Answer: Wrong (A)
+      registerHotkey('study.answer_wrong', () => {
         if (showResult && !done) {
           handleAnswer(false);
         }
       }, () => showResult && !done),
 
-      // Answer: Easy/Correct (D)
-      registerHotkey('study.answer_easy', () => {
+      // Answer: Correct (D)
+      registerHotkey('study.answer_correct', () => {
         if (showResult && !done) {
           handleAnswer(true);
         }
       }, () => showResult && !done),
+
+      // Answer: Skip (S)
+      registerHotkey('study.answer_skip', () => {
+        if (!done) {
+          handleSkip();
+        }
+      }, () => !done),
 
       // Next card (N)
       registerHotkey('study.next_card', () => {
@@ -184,18 +205,25 @@
         </PillButton>
       {:else}
         <div class="study__result-buttons">
-          <PillButton variant="danger-outline" onclick={() => handleAnswer(false)} fullWidth={false} width="calc(50% - 6px)" disabled={submitting}>
+          <PillButton variant="danger-outline" onclick={() => handleAnswer(false)} fullWidth={false} width="calc(33.33% - 8px)" disabled={submitting}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
               <line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/>
             </svg>
-            <span>{$t('study.incorrect')}</span>
+            <span>Wrong</span>
             <span class="study__key-hint">A</span>
           </PillButton>
-          <PillButton onclick={() => handleAnswer(true)} fullWidth={false} width="calc(50% - 6px)" disabled={submitting}>
+          <PillButton variant="secondary" onclick={handleSkip} fullWidth={false} width="calc(33.33% - 8px)" disabled={submitting}>
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <line x1="5" y1="12" x2="19" y2="12"/>
+            </svg>
+            <span>Skip</span>
+            <span class="study__key-hint">S</span>
+          </PillButton>
+          <PillButton onclick={() => handleAnswer(true)} fullWidth={false} width="calc(33.33% - 8px)" disabled={submitting}>
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
               <polyline points="20 6 9 17 4 12"/>
             </svg>
-            <span>{$t('study.correct')}</span>
+            <span>Correct</span>
             <span class="study__key-hint">D</span>
           </PillButton>
         </div>

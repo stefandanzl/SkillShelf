@@ -3,11 +3,11 @@ import type { HotkeyConfig } from './types';
 // Default keybindings - ergonomic choices for study flow
 // Can be a single binding or an array of bindings
 export const defaultHotkeys: HotkeyConfig = {
-	// Study mode - left hand for answers
-	'study.answer_again': { key: 'a' },
-	'study.answer_hard': { key: 's' },
-	'study.answer_easy': { key: 'd' },
-	'study.flip_card': [{ key: ' ' }, { key: 'Enter' }], // Multiple bindings example
+	// Study mode
+	'study.answer_correct': { key: 'd' },
+	'study.answer_wrong': { key: 'a' },
+	'study.answer_skip': { key: 's' },
+	'study.flip_card': [{ key: ' ' }, { key: 'Enter' }],
 	'study.next_card': { key: 'n' },
 	'study.previous_card': { key: 'p' },
 

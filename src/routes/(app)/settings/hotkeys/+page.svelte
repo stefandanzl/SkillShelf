@@ -5,10 +5,9 @@
   import {
     parseBindingString,
     getBindingConflict,
-    getHotkeys,
-    type HotkeyAction
+    getHotkeys
   } from '$lib/hotkeys';
-  import { HotkeyGroups, getHotkeyI18nKey } from '$lib/hotkeys/types';
+  import { HotkeyGroups, getHotkeyI18nKey, type HotkeyAction } from '$lib/hotkeys/types';
   import { t } from '$lib/i18n';
   import { pb } from '$lib/pocketbase.svelte';
 

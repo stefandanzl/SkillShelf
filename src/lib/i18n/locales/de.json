@@ -98,9 +98,9 @@
     "app_name": "SkillShelf"
   },
   "hotkeys": {
-    "study_answer_again": "Antwort: Nochmal",
-    "study_answer_hard": "Antwort: Schwer",
-    "study_answer_easy": "Antwort: Einfach",
+    "study_answer_correct": "Antwort: Richtig",
+    "study_answer_wrong": "Antwort: Falsch",
+    "study_answer_skip": "Antwort: Überspringen",
     "study_flip_card": "Karte umdrehen",
     "study_next_card": "Nächste Karte",
     "study_previous_card": "Vorherige Karte",
