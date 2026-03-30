@@ -3,17 +3,26 @@
   import { page } from "$app/state";
   import { isValidEmail } from "$lib";
 
+  interface Data {
+    success?: boolean;
+    email?: string;
+    error?: string;
+  }
+
+  let { form }: { form: Data } = $props();
+
   let isLoading = $state(false);
   let email = $state("");
   let disabled = $derived(!isValidEmail(email));
+  let message = $derived(form?.error);
   $inspect("reset: $page.form", page.form);
 </script>
 
 <h3>Forgot your password?</h3>
 
-{#if page.form?.success}
+{#if form?.success}
   <p class="success">
-    Please check your email, a recovery message has been sent to <mark>{page.form?.email}</mark>.
+    Please check your email, a recovery message has been sent to <mark>{form?.email}</mark>.
   </p>
 {:else}
   <p>Enter the email associated with your account, and we'll send you a link you can use to reset your password.</p>
@@ -38,6 +47,12 @@
     />
     <button aria-busy={isLoading} {disabled} type="submit">Send Recovery Email</button>
   </form>
+
+  {#if message}
+    <div class="error">
+      {message}
+    </div>
+  {/if}
 {/if}
 
 <small>Remembered? <a href="/sign/in">Sign in to your account</a>.</small>
@@ -56,5 +71,19 @@
     display: inline-block;
     width: 100%;
     text-align: center;
+  }
+  input {
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    padding: var(--space-sm) var(--space-md);
+    border-radius: var(--radius-sm);
+    width: 100%;
+  }
+  input:focus {
+    border-color: var(--color-border-active);
+  }
+  .error {
+    color: var(--color-danger);
+    margin-top: var(--space-md);
   }
 </style>

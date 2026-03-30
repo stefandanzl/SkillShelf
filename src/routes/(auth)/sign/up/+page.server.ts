@@ -1,5 +1,4 @@
 import { redirect } from "@sveltejs/kit";
-import { pbError } from "$lib/pocketbase.svelte";
 import { dev } from "$app/environment";
 
 export const load = async ({ locals }) => {
@@ -39,8 +38,11 @@ export const actions = {
         await locals.pb.collection("users").authWithPassword(user.email, user.password);
       }
     } catch (err: unknown) {
-      pbError(err);
+      const error = err as import('pocketbase').ClientResponseError;
+      return { error: error.message || 'Failed to create account.' };
     }
+
+    // Redirect on successful registration
     redirect(307, "/verify");
   },
 };

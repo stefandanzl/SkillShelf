@@ -1,4 +1,3 @@
-import { pbError } from '$lib/pocketbase.svelte';
 import { redirect } from '@sveltejs/kit';
 
 export const load = async ({ locals }) => {
@@ -17,7 +16,15 @@ export const actions = {
 		try {
 			await locals.pb.collection('users').authWithPassword(form.username, form.password);
 		} catch (e) {
-			pbError(e);
+			const err = e as import('pocketbase').ClientResponseError;
+			return { error: err.message || 'Failed to authenticate.' };
+		}
+
+		// Redirect to /app if verified, otherwise to /verify
+		if (locals.pb.authStore.model?.verified) {
+			redirect(307, '/app');
+		} else {
+			redirect(307, '/verify');
 		}
 	}
 };

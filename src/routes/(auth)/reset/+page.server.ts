@@ -1,4 +1,3 @@
-import { pbError } from '$lib/pocketbase.svelte';
 
 export const actions = {
 	default: async ({ locals, request }) => {
@@ -11,7 +10,8 @@ export const actions = {
 			return { success: result, email: form.email };
 		} catch (e) {
 			console.error(e);
-			pbError(e);
+			const err = e as import('pocketbase').ClientResponseError;
+			return { error: err.message || 'Failed to send reset email.' };
 		}
 	}
 };

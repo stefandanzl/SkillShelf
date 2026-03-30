@@ -2,13 +2,19 @@
   import { dev } from "$app/environment";
   import { page } from "$app/state";
 
+  interface Data {
+    error?: string;
+  }
+
+  let { form }: { form: Data } = $props();
+
   let isLoading = $state(false);
 
   let email = $state("");
   let name = $state("");
   let password = $state("");
   let passwordConfirm = $state("");
-  let message = $state(page.url.searchParams.get("message"));
+  let message = $derived(form?.error || page.url.searchParams.get("message"));
 
   let emailInvalid = $derived(email ? !/^[\w\-.]+@([\w-]+\.)+[\w-]{2,}$/gm.test(email) : undefined);
   let passwordInvalid = $derived(password ? password.length < 8 : undefined);
@@ -90,4 +96,20 @@
 {/if}
 
 <style>
+  input {
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    padding: var(--space-sm) var(--space-md);
+    border-radius: var(--radius-sm);
+    width: 100%;
+  }
+
+  input:focus {
+    border-color: var(--color-border-active);
+  }
+
+  .error {
+    color: var(--color-danger);
+    margin-top: var(--space-md);
+  }
 </style>

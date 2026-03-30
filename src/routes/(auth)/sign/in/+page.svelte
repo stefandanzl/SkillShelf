@@ -2,9 +2,15 @@
   import { enhance } from "$app/forms";
   import { page } from "$app/state";
 
+  interface Data {
+    error?: string;
+  }
+
+  let { data, form }: { data: Data; form: Data } = $props();
+
   let username = $state("");
   let password = $state("");
-  let message = $state(page.url.searchParams.get("message"));
+  let message = $derived(form?.error || page.url.searchParams.get("message"));
   let disabled = $derived(!username || !password);
 </script>
 
@@ -31,4 +37,20 @@
 {/if}
 
 <style>
+  input {
+    background-color: var(--color-surface);
+    border: 1px solid var(--color-border);
+    padding: var(--space-sm) var(--space-md);
+    border-radius: var(--radius-sm);
+    width: 100%;
+  }
+
+  input:focus {
+    border-color: var(--color-border-active);
+  }
+
+  .error {
+    color: var(--color-danger);
+    margin-top: var(--space-md);
+  }
 </style>
