@@ -6,7 +6,7 @@
   import { waitLocale } from 'svelte-i18n';
   import { browser } from '$app/environment';
   import { theme } from '$lib/stores/theme';
-  import { initHotkeys } from '$lib/hotkeys';
+  import { initHotkeys, loadUserHotkeys } from '$lib/hotkeys';
   // subscribing ensures the store initializes and applies the theme
   theme.subscribe(() => {});
 
@@ -30,6 +30,14 @@
 
   onMount(async () => {
     await waitLocale();
+    // Load user's custom hotkeys FIRST, before initializing the system
+    if (data.user?.hotkeys) {
+      loadUserHotkeys(data.user.hotkeys);
+    } else if (browser && (window as any).pb?.authStore?.record?.hotkeys) {
+      // Fallback: try to load from client-side pb instance
+      loadUserHotkeys((window as any).pb.authStore.record.hotkeys);
+    }
+    // Now initialize with user hotkeys already loaded
     initHotkeys();
     isReady = true;
   });

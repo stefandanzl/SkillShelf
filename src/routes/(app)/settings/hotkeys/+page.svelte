@@ -5,7 +5,8 @@
   import {
     parseBindingString,
     getBindingConflict,
-    getHotkeys
+    getHotkeys,
+    loadUserHotkeys
   } from '$lib/hotkeys';
   import { HotkeyGroups, getHotkeyI18nKey, type HotkeyAction } from '$lib/hotkeys/types';
   import { t } from '$lib/i18n';
@@ -23,7 +24,31 @@
 
   onMount(() => {
     loadDefaults();
+    loadUserHotkeysFromProfile();
   });
+
+  function loadUserHotkeysFromProfile() {
+    const user = (pb.authStore.record as any);
+    if (user?.hotkeys) {
+      userBindings = { ...user.hotkeys };
+      // Also load into global hotkey system for flashcards to use
+      loadUserHotkeys(user.hotkeys);
+    }
+  }
+
+  async function saveUserHotkeys() {
+    const user = (pb.authStore.record as any);
+    if (!user) return;
+
+    try {
+      await pb.collection('users').update(user.id, {
+        hotkeys: userBindings
+      });
+      console.log('Hotkeys saved to server');
+    } catch (e) {
+      console.error('Failed to save hotkeys:', e);
+    }
+  }
 
   function loadDefaults() {
     const hotkeys = getHotkeys();
@@ -141,8 +166,7 @@
 
     stopRecording();
 
-    // TODO: Save to user profile
-    console.log('User bindings after add:', userBindings);
+    saveUserHotkeys();
   }
 
   function removeHotkey(action: string, bindingString: string) {
@@ -167,20 +191,18 @@
     // Force reactivity by creating new object reference
     userBindings = { ...userBindings };
 
-    console.log('User bindings after remove:', userBindings);
+    saveUserHotkeys();
   }
 
   function resetToDefault(action: string) {
     // Remove user override (will fall back to defaults)
     delete userBindings[action];
-    // TODO: Save to user profile
-    console.log('User bindings after reset:', userBindings);
+    saveUserHotkeys();
   }
 
   function resetAll() {
     userBindings = {};
-    // TODO: Save to user profile
-    console.log('User bindings after reset all:', userBindings);
+    saveUserHotkeys();
   }
 
   function formatHotkeyDisplay(bindingString: string): string {

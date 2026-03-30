@@ -164,12 +164,13 @@ export enum UsersLanguageOptions {
 	"en" = "en",
 	"de" = "de",
 }
-export type UsersRecord = {
+export type UsersRecord<Thotkeys = unknown> = {
 	admin?: boolean
 	avatar?: FileNameString
 	created: IsoAutoDateString
 	email: string
 	emailVisibility?: boolean
+	hotkeys?: null | Thotkeys
 	id: string
 	language?: UsersLanguageOptions
 	name?: string
@@ -189,7 +190,7 @@ export type BoxesResponse<Texpand = unknown> = Required<BoxesRecord> & BaseSyste
 export type CardProgressResponse<Texpand = unknown> = Required<CardProgressRecord> & BaseSystemFields<Texpand>
 export type CardsResponse<Texpand = unknown> = Required<CardsRecord> & BaseSystemFields<Texpand>
 export type StudySessionsResponse<Texpand = unknown> = Required<StudySessionsRecord> & BaseSystemFields<Texpand>
-export type UsersResponse<Texpand = unknown> = Required<UsersRecord> & AuthSystemFields<Texpand>
+export type UsersResponse<Thotkeys = unknown, Texpand = unknown> = Required<UsersRecord<Thotkeys>> & AuthSystemFields<Texpand>
 
 // Types containing all Records and Responses, useful for creating typing helper functions
 

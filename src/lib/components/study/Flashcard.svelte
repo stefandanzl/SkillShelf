@@ -11,6 +11,7 @@
 
   let dragX = $state(0);
   let dragging = $state(false);
+  let flippedCoeff = $derived(flipped? -1 : 1)
   let startX = 0;
   const THRESHOLD = 80;
 
@@ -34,7 +35,7 @@
   const cardBg = $derived(
     dragX < -40 ? '#4A1525' :
     dragX > 40 ? '#1A3A4A' :
-    flipped ? 'var(--color-surface-alt)' : 'var(--color-surface)'
+    'var(--color-surface)'
   );
   const rotation = $derived(Math.max(-15, Math.min(15, dragX / 10)));
 </script>
@@ -51,7 +52,7 @@
   <div
     class="card-inner"
     class:flipped
-    style="background: {cardBg}; transform: rotateY({flipped ? 180 : 0}deg) rotate({dragging ? rotation : 0}deg) translateX({dragX}px)"
+    style="background: {cardBg}; transform: rotateY({flipped ? 180 : 0}deg) rotate({dragging ? rotation*flippedCoeff : 0}deg) translateX({dragX*flippedCoeff}px)"
   >
     <div class="card-face card-front">
       <div class="card-face__content">{front}</div>
@@ -113,7 +114,7 @@
     padding: var(--space-lg);
   }
   .card-front { background: inherit; }
-  .card-back { transform: rotateY(180deg); background: var(--color-surface-alt); }
+  .card-back { transform: rotateY(180deg); background: inherit; }
   .card-face__content {
     flex: 1;
     display: flex;
