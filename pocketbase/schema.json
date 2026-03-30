@@ -239,6 +239,28 @@
 				"required": false,
 				"presentable": false,
 				"hidden": false
+			},
+			{
+				"system": false,
+				"id": "boxes_created",
+				"name": "created",
+				"type": "autodate",
+				"required": false,
+				"presentable": false,
+				"hidden": false,
+				"onCreate": true,
+				"onUpdate": false
+			},
+			{
+				"system": false,
+				"id": "boxes_updated",
+				"name": "updated",
+				"type": "autodate",
+				"required": false,
+				"presentable": false,
+				"hidden": false,
+				"onCreate": true,
+				"onUpdate": true
 			}
 		],
 		"indexes": [],
@@ -335,6 +357,28 @@
 				"required": false,
 				"presentable": false,
 				"hidden": false
+			},
+			{
+				"system": false,
+				"id": "cards_created",
+				"name": "created",
+				"type": "autodate",
+				"required": false,
+				"presentable": false,
+				"hidden": false,
+				"onCreate": true,
+				"onUpdate": false
+			},
+			{
+				"system": false,
+				"id": "cards_updated",
+				"name": "updated",
+				"type": "autodate",
+				"required": false,
+				"presentable": false,
+				"hidden": false,
+				"onCreate": true,
+				"onUpdate": true
 			}
 		],
 		"indexes": [],
@@ -447,6 +491,28 @@
 				"required": false,
 				"presentable": false,
 				"hidden": false
+			},
+			{
+				"system": false,
+				"id": "cp_created",
+				"name": "created",
+				"type": "autodate",
+				"required": false,
+				"presentable": false,
+				"hidden": false,
+				"onCreate": true,
+				"onUpdate": false
+			},
+			{
+				"system": false,
+				"id": "cp_updated",
+				"name": "updated",
+				"type": "autodate",
+				"required": false,
+				"presentable": false,
+				"hidden": false,
+				"onCreate": true,
+				"onUpdate": true
 			}
 		],
 		"indexes": [],
@@ -546,6 +612,28 @@
 				"required": false,
 				"presentable": false,
 				"hidden": false
+			},
+			{
+				"system": false,
+				"id": "ss_created",
+				"name": "created",
+				"type": "autodate",
+				"required": false,
+				"presentable": false,
+				"hidden": false,
+				"onCreate": true,
+				"onUpdate": false
+			},
+			{
+				"system": false,
+				"id": "ss_updated",
+				"name": "updated",
+				"type": "autodate",
+				"required": false,
+				"presentable": false,
+				"hidden": false,
+				"onCreate": true,
+				"onUpdate": true
 			}
 		],
 		"indexes": [],

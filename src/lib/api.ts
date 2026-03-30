@@ -5,9 +5,12 @@ import { error } from '@sveltejs/kit';
 // ── Boxes ─────────────────────────────────────────────────────────────────────
 
 export async function getBoxes(pb: TypedPocketBase): Promise<Box[]> {
+	console.log('getBoxes - authStore.record:', pb.authStore.record, 'isValid:', pb.authStore.isValid);
 	const result = await pb.collection('boxes').getList(1, 200, {
 		sort: '-created'
 	});
+	console.log('getBoxes - result:', result);
+	console.log('getBoxes - items:', result.items);
 	return result.items;
 }
 
@@ -19,13 +22,17 @@ export async function createBox(
 	pb: TypedPocketBase,
 	data: { name: string; color: BoxColor; learn_direction?: LearnDirection; tts_language?: string }
 ): Promise<Box> {
-	return pb.collection('boxes').create({
+	const ownerId = pb.authStore.record?.id;
+	console.log('createBox - ownerId:', ownerId, 'authStore.record:', pb.authStore.record);
+	const result = await pb.collection('boxes').create({
 		name: data.name,
-		owner: pb.authStore.record?.id,
+		owner: ownerId,
 		color: data.color,
 		learn_direction: data.learn_direction ?? 'front_to_back',
 		tts_language: data.tts_language ?? ''
 	});
+	console.log('createBox - result:', result);
+	return result;
 }
 
 export async function updateBox(
