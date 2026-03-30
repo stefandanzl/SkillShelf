@@ -84,7 +84,7 @@
 	// Register hotkeys on mount
 	onMount(() => {
 		// Load user's custom hotkeys first
-		const user = (pb.authStore.record as any);
+		const user = pb.authStore.record as any;
 		if (user?.hotkeys) {
 			loadUserHotkeys(user.hotkeys);
 		}
@@ -103,22 +103,18 @@
 			registerHotkey(
 				'study.answer_wrong',
 				() => {
-					if (showResult && !done) {
-						handleAnswer(false);
-					}
+					handleAnswer(false);
 				},
-				() => showResult && !done
+				() => !done
 			),
 
 			// Answer: Correct (D)
 			registerHotkey(
 				'study.answer_correct',
 				() => {
-					if (showResult && !done) {
-						handleAnswer(true);
-					}
+					handleAnswer(true);
 				},
-				() => showResult && !done
+				() => !done
 			),
 
 			// Answer: Skip (S)
@@ -359,7 +355,7 @@
 		/* user-select: none;
 		-webkit-user-select: none; */
 	}
-	/* 
+	/*
   .study__card-area :global(*) {
     user-select: none;
     -webkit-user-select: none;

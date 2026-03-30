@@ -5,8 +5,9 @@
   import {
     parseBindingString,
     getBindingConflict,
-    getHotkeys,
-    loadUserHotkeys
+    loadUserHotkeys,
+    bindingToString,
+    defaultHotkeys
   } from '$lib/hotkeys';
   import { HotkeyGroups, getHotkeyI18nKey, type HotkeyAction } from '$lib/hotkeys/types';
   import { t } from '$lib/i18n';
@@ -15,15 +16,11 @@
   // Local state for user overrides only - Record<action, bindingString[]>
   let userBindings = $state<Record<string, string[]>>({});
 
-  // Cache of default bindings
-  let defaultBindings: Record<string, string[]> = $state({});
-
   // Recording state
   let recordingAction: HotkeyAction | null = $state(null);
   let recordedModifiers = $state({ ctrl: false, alt: false, shift: false, meta: false });
 
   onMount(() => {
-    loadDefaults();
     loadUserHotkeysFromProfile();
   });
 
@@ -50,31 +47,23 @@
     }
   }
 
-  function loadDefaults() {
-    const hotkeys = getHotkeys();
-    const defaults: Record<string, string[]> = {};
+  function getDefaultBindings(action: string): string[] {
+    // Return default bindings as strings
+    const defaultBinding = (defaultHotkeys as Record<string, any>)[action];
+    if (!defaultBinding) return [];
 
-    for (const [action, bindingOrArray] of Object.entries(hotkeys)) {
-      const array = Array.isArray(bindingOrArray) ? bindingOrArray : [bindingOrArray];
-      defaults[action] = array.map(b => bindingToString(b));
+    if (Array.isArray(defaultBinding)) {
+      return defaultBinding.map(bindingToString);
     }
-
-    defaultBindings = defaults;
-  }
-
-  function bindingToString(binding: any): string {
-    const parts: string[] = [];
-    if (binding.ctrl) parts.push('ctrl');
-    if (binding.alt) parts.push('alt');
-    if (binding.shift) parts.push('shift');
-    if (binding.meta) parts.push('meta');
-    parts.push(binding.key.toLowerCase());
-    return parts.join('+');
+    return [bindingToString(defaultBinding)];
   }
 
   function getBindingsForAction(action: string): string[] {
     // Return user overrides if present, otherwise defaults
-    return userBindings[action] || defaultBindings[action] || [];
+    if (userBindings[action]) {
+      return userBindings[action];
+    }
+    return getDefaultBindings(action);
   }
 
   function isUsingDefaults(action: string): boolean {
@@ -83,10 +72,7 @@
 
   function hasConflict(action: string, bindingString: string): boolean {
     // Check if this binding is used by any other action
-    // Check both user bindings and defaults
-    const allBindings = getBindingsForAction(action);
-
-    for (const [otherAction] of Object.entries(defaultBindings)) {
+    for (const [otherAction] of Object.entries(defaultHotkeys)) {
       if (otherAction === action) continue;
 
       const otherBindings = getBindingsForAction(otherAction);
@@ -94,12 +80,6 @@
         return true;
       }
     }
-    return false;
-  }
-
-  function hasCustomHotkeys(action: string): boolean {
-    // Check if differs from default
-    // For now, we'll track this separately
     return false;
   }
 
@@ -180,7 +160,7 @@
     if (newBindings.length === 0) {
       // No bindings left - explicitly set to empty
       userBindings[action] = [];
-    } else if (JSON.stringify(newBindings) === JSON.stringify(defaultBindings[action])) {
+    } else if (JSON.stringify(newBindings) === JSON.stringify(getDefaultBindings(action))) {
       // Matches defaults exactly - remove user override to use defaults
       delete userBindings[action];
     } else {
@@ -197,6 +177,7 @@
   function resetToDefault(action: string) {
     // Remove user override (will fall back to defaults)
     delete userBindings[action];
+    userBindings = { ...userBindings };
     saveUserHotkeys();
   }
 
@@ -297,17 +278,6 @@
                     <path d="M8 12h8"/><path d="M12 8v8"/>
                   </svg>
                 </button>
-
-                <!-- Clear all custom hotkeys -->
-                <!-- <button
-                  class="hotkey-item__clear"
-                  onclick={() => resetToDefault(action)}
-                  title="Clear all custom hotkeys"
-                >
-                  <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-                    <path d="M18 6 6 18"/><path d="m6 6 12 12"/>
-                  </svg>
-                </button> -->
               {:else}
                 <!-- Cancel recording -->
                 <button

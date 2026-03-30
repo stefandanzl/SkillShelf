@@ -3,6 +3,9 @@ import { dev } from '$app/environment';
 import type { HotkeyAction, HotkeyBinding, HotkeyConfig, HotkeyHandler } from './types';
 import { defaultHotkeys as defaults } from './defaults';
 
+// Re-export defaults for settings page
+export { defaultHotkeys } from './defaults';
+
 // User's custom hotkeys - stored as arrays of binding strings for easier serialization
 // Format: { 'study.flip_card': [' ', 'Enter'] }
 let userHotkeys: Record<string, string[]> = {};
