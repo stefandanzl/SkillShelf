@@ -1,45 +1,50 @@
-import type { TypedPocketBase, Box, Card, CardProgress, BoxColor, LearnDirection } from './types';
+import type {
+	TypedPocketBase,
+	BoxesRecord,
+	CardsRecord,
+	CardProgressRecord,
+	BoxesColorOptions,
+	// BoxesLearnDirectionOptions,
+	BoxesResponse,
+	CardsResponse,
+	CardProgressResponse
+} from '$lib/pocketbase-types';
+import { BoxesLearnDirectionOptions } from '$lib/pocketbase-types';
 import { processAnswer } from './leitner';
 import { error } from '@sveltejs/kit';
 
 // ── Boxes ─────────────────────────────────────────────────────────────────────
 
-export async function getBoxes(pb: TypedPocketBase): Promise<Box[]> {
-	console.log('getBoxes - authStore.record:', pb.authStore.record, 'isValid:', pb.authStore.isValid);
+export async function getBoxes(pb: TypedPocketBase): Promise<BoxesRecord[]> {
 	const result = await pb.collection('boxes').getList(1, 200, {
 		sort: '-created'
 	});
-	console.log('getBoxes - result:', result);
-	console.log('getBoxes - items:', result.items);
 	return result.items;
 }
 
-export async function getBox(pb: TypedPocketBase, id: string): Promise<Box> {
+export async function getBox(pb: TypedPocketBase, id: string): Promise<BoxesResponse> {
 	return pb.collection('boxes').getOne(id);
 }
 
 export async function createBox(
 	pb: TypedPocketBase,
-	data: { name: string; color: BoxColor; learn_direction?: LearnDirection; tts_language?: string }
-): Promise<Box> {
+	data: { name: string; color: BoxesColorOptions; learn_direction?: BoxesLearnDirectionOptions; tts_language?: string }
+): Promise<BoxesResponse> {
 	const ownerId = pb.authStore.record?.id;
-	console.log('createBox - ownerId:', ownerId, 'authStore.record:', pb.authStore.record);
-	const result = await pb.collection('boxes').create({
+	return pb.collection('boxes').create({
 		name: data.name,
 		owner: ownerId,
 		color: data.color,
-		learn_direction: data.learn_direction ?? 'front_to_back',
+		learn_direction: data.learn_direction ?? BoxesLearnDirectionOptions.front_to_back,
 		tts_language: data.tts_language ?? ''
 	});
-	console.log('createBox - result:', result);
-	return result;
 }
 
 export async function updateBox(
 	pb: TypedPocketBase,
 	id: string,
-	data: Partial<Pick<Box, 'name' | 'color' | 'learn_direction' | 'tts_language'>>
-): Promise<Box> {
+	data: Partial<Pick<BoxesRecord, 'name' | 'color' | 'learn_direction' | 'tts_language'>>
+): Promise<BoxesResponse> {
 	return pb.collection('boxes').update(id, data);
 }
 
@@ -49,7 +54,7 @@ export async function deleteBox(pb: TypedPocketBase, id: string): Promise<void> 
 
 // ── Cards ─────────────────────────────────────────────────────────────────────
 
-export async function getCards(pb: TypedPocketBase, boxId: string): Promise<Card[]> {
+export async function getCards(pb: TypedPocketBase, boxId: string): Promise<CardsRecord[]> {
 	const result = await pb.collection('cards').getList(1, 500, {
 		filter: `box = "${boxId}"`,
 		sort: 'sort_order,created'
@@ -61,7 +66,7 @@ export async function createCard(
 	pb: TypedPocketBase,
 	boxId: string,
 	data: { front: string; back: string }
-): Promise<Card> {
+): Promise<CardsResponse> {
 	return pb.collection('cards').create({
 		box: boxId,
 		front: data.front,
@@ -74,7 +79,7 @@ export async function updateCard(
 	pb: TypedPocketBase,
 	id: string | undefined,
 	data: { front?: string; back?: string }
-): Promise<Card> {
+): Promise<CardsResponse> {
 	if (!id) {
 		throw new Error('id empty: ' + id);
 	}
@@ -90,7 +95,7 @@ export async function deleteCard(pb: TypedPocketBase, id: string | undefined): P
 
 // ── Card Progress ─────────────────────────────────────────────────────────────
 
-export async function getProgressForBox(pb: TypedPocketBase, boxId: string): Promise<CardProgress[]> {
+export async function getProgressForBox(pb: TypedPocketBase, boxId: string): Promise<CardProgressResponse[]> {
 	const result = await pb.collection('card_progress').getList(1, 500, {
 		filter: `box = "${boxId}"`
 	});
@@ -100,7 +105,7 @@ export async function getProgressForBox(pb: TypedPocketBase, boxId: string): Pro
 export async function getDueCards(
 	pb: TypedPocketBase,
 	boxId: string
-): Promise<Array<{ card: Card; progress: CardProgress | null }>> {
+): Promise<Array<{ card: CardsRecord; progress: CardProgressRecord | null }>> {
 	// Get all cards in box
 	const cards = await getCards(pb, boxId);
 
@@ -109,7 +114,7 @@ export async function getDueCards(
 	const progressMap = new Map(progressList.map((p) => [p.card, p]));
 
 	const now = new Date();
-	const result: Array<{ card: Card; progress: CardProgress | null }> = [];
+	const result: Array<{ card: CardsRecord; progress: CardProgressRecord | null }> = [];
 
 	for (const card of cards) {
 		const progress = progressMap.get(card.id) ?? null;
@@ -131,15 +136,15 @@ export async function getDueCards(
 
 export async function submitAnswer(
 	pb: TypedPocketBase,
-	card: Card,
-	existingProgress: CardProgress | null,
+	card: CardsRecord,
+	existingProgress: CardProgressRecord | null,
 	wasCorrect: boolean
-): Promise<CardProgress> {
+): Promise<CardProgressRecord> {
 	const userId = pb.authStore.record?.id;
 	if (!userId) throw new Error('Not authenticated');
 
 	const current = existingProgress ?? { level: 1, streak: 0 };
-	const update = processAnswer(current as CardProgress, wasCorrect);
+	const update = processAnswer(current as CardProgressRecord, wasCorrect);
 
 	if (existingProgress) {
 		return pb.collection('card_progress').update(existingProgress.id, update);
@@ -159,7 +164,7 @@ export async function submitAnswer(
 
 // ── Level counts (for Leitner grid) ──────────────────────────────────────────
 
-export function buildLevelCounts(progressList: CardProgress[], totalCards: number): number[] {
+export function buildLevelCounts(progressList: CardProgressRecord[], totalCards: number): number[] {
 	// returns array of 8: index 0-6 = levels 1-7, index 7 = mastered
 	const counts = Array(8).fill(0);
 	const progressMap = new Map(progressList.map((p) => [p.card, p]));
@@ -172,7 +177,9 @@ export function buildLevelCounts(progressList: CardProgress[], totalCards: numbe
 		if (p.mastered) {
 			counts[7]++;
 		} else {
-			counts[p.level - 1]++;
+			// Clamp level to valid range 1-7, default to 1 if null/undefined/invalid
+			const level = Math.max(1, Math.min(7, p.level ?? 1));
+			counts[level - 1]++;
 		}
 	}
 	return counts;

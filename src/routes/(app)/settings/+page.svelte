@@ -5,7 +5,7 @@
   import SettingsGroup from '$lib/components/ui/SettingsGroup.svelte';
   import SegmentedControl from '$lib/components/ui/SegmentedControl.svelte';
   import Toggle from '$lib/components/ui/Toggle.svelte';
-  import { locale } from '$lib/i18n';
+  import { locale, setLocale } from '$lib/i18n';
 
   let theme = $state('auto');
   let reminderEnabled = $state(false);
@@ -21,7 +21,8 @@
   const languageLabel = $derived(currentLocale === 'de' ? 'Deutsch' : 'English');
 
   function toggleLanguage() {
-    locale.set(currentLocale === 'de' ? 'en' : 'de');
+    const newLocale = currentLocale === 'de' ? 'en' : 'de';
+    setLocale(newLocale);
   }
 </script>
 

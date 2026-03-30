@@ -26,6 +26,7 @@ export const actions = {
       password: form.password,
       passwordConfirm: form.passwordConfirm,
       username: form.name.toLowerCase().replace(/[^A-Za-z0-9]/g, ""),
+      language: 'en', // default, will be updated by client on first load
     };
 
     if (dev) {

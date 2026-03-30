@@ -1,11 +1,12 @@
-import type { ClientResponseError, TypedPocketBase, User } from '$lib/types';
+import type { TypedPocketBase, UsersRecord } from './pocketbase-types';
+import type { ClientResponseError } from 'pocketbase';
 import { redirect, error, type RequestEvent } from '@sveltejs/kit';
 import PocketBase from 'pocketbase';
 
 import { browser, dev } from '$app/environment';
 import { env } from '$env/dynamic/public';
 
-export const getAvatarUrl = (user: User) => {
+export const getAvatarUrl = (user: UsersRecord) => {
 	// FIXME: Use pb.getFileUrl()
 	const base = `${env.PUBLIC_POCKETBASE_URL}/api/files/systemprofiles0`;
 	return user ? `${base}/${user.id}/${user.avatar}` : null;
@@ -23,7 +24,8 @@ function createPocketBase(): TypedPocketBase {
 	if (browser) {
 		pb.authStore.loadFromCookie(document.cookie);
 	}
-	// FIXME: is this a bug? Should it return an empty object or error if run with SSR?
+	// Disable auto-cancellation to allow concurrent requests
+	pb.autoCancellation(false);
 	return pb;
 }
 
@@ -37,7 +39,7 @@ export class Security {
 	// being set and output a warning (at least in dev mode) or throw an exception (rather than risk
 	// accidentally exposing some data).
 
-	private readonly user: User | null;
+	private readonly user: UsersRecord | null;
 
 	constructor(private readonly event: RequestEvent) {
 		this.user = event.locals.user || null;

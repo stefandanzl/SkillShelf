@@ -2,6 +2,7 @@ import { browser } from '$app/environment';
 import { pb } from '$lib/pocketbase.svelte';
 import { getBoxes, getCards, getProgressForBox, buildLevelCounts } from '$lib/api';
 import { isDueToday } from '$lib/leitner';
+import { syncLocaleFromUser } from '$lib/i18n';
 import type { PageLoad } from './$types';
 
 export const load: PageLoad = async () => {
@@ -9,6 +10,9 @@ export const load: PageLoad = async () => {
 	if (!browser || !pb.authStore.isValid) {
 		return { boxSummaries: [] };
 	}
+
+	// Sync locale from user profile
+	syncLocaleFromUser();
 
 	try {
 		const boxes = await getBoxes(pb);

@@ -1,4 +1,4 @@
-import type { TypedPocketBase } from '$lib/types'
+import type { TypedPocketBase } from '$lib/pocketbase-types'
 import type { Handle } from '@sveltejs/kit'
 
 import { dev } from '$app/environment'
@@ -30,7 +30,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 	// httpOnly = false is required for realtime to get the cookie (see verify/+page.svelte)
 	response.headers.set(
 		'set-cookie',
-		event.locals.pb.authStore.exportToCookie({ httpOnly: false, sameSite: 'Lax', secure: !dev }),
+		event.locals.pb.authStore.exportToCookie({ httpOnly: false, sameSite: 'Lax', secure: !dev })
 	)
 	return response
 }

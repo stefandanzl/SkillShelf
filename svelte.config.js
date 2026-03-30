@@ -17,7 +17,6 @@ const config = {
 		adapter: adapter(),
 		alias: {
 			$utils: 'src/utils',
-			$types: 'src/types',
 			$routes: 'src/routes'
 		}
 	}

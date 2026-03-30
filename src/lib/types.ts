@@ -24,6 +24,7 @@ export interface User extends BaseRecord {
   country: string;       // ISO 3166-1 alpha-2
   birthday: string;      // ISO date string
   admin: boolean;        // custom field added to users collection
+  language: 'en' | 'de'; // user's preferred language
 }
 
 // ── boxes ─────────────────────────────────────────────────────────────────────
