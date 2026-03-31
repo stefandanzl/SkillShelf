@@ -28,12 +28,18 @@
 	let submitting = $state(false);
 	let flashcardRef: { triggerSwipe: (direction: 'left' | 'right') => Promise<void> } | null = $state(null);
 	let showButtons = $state(true);
+	let starredOverrides = $state<Record<string, boolean>>({});
 
 	const currentEntry = $derived(
 		dueCards[currentIndex] as { card: CardsRecord; progress: CardProgressRecord | null } | undefined
 	);
 	const currentCard = $derived(currentEntry?.card);
 	const currentProgress = $derived(currentEntry?.progress ?? null);
+	const currentStarred = $derived(
+		currentCard && currentCard.id in starredOverrides
+			? starredOverrides[currentCard.id]
+			: (currentProgress?.starred ?? false)
+	);
 	const progressPct = $derived(dueCards.length > 0 ? (currentIndex / dueCards.length) * 100 : 0);
 	const isLast = $derived(currentIndex >= dueCards.length - 1);
 
@@ -53,6 +59,13 @@
 		}
 	}
 
+	function toggleStar() {
+		if (!currentCard) return;
+		const cardId = currentCard.id;
+		const newStarredValue = !currentStarred;
+		starredOverrides = { ...starredOverrides, [cardId]: newStarredValue };
+	}
+
 	async function handleAnswer(wasCorrect: boolean, skipAnimation = false) {
 		if (!currentCard || submitting) return;
 		submitting = true;
@@ -65,7 +78,8 @@
 		}
 
 		try {
-			await submitAnswer(pb as any, currentCard, currentProgress, wasCorrect);
+			const starOverride = currentCard.id in starredOverrides ? starredOverrides[currentCard.id] : undefined;
+				await submitAnswer(pb as any, currentCard, currentProgress, wasCorrect, starOverride);
 		} catch (e) {
 			console.error('Failed to submit answer', e);
 		} finally {
@@ -253,10 +267,12 @@
 						front={currentCard.front}
 						back={currentCard.back}
 						level={currentProgress?.level ?? 1}
+						starred={currentStarred}
 						{flipped}
 						onswipeleft={handleSwipeLeft}
 						onswiperight={handleSwipeRight}
 						onflip={toggleFlip}
+						ontogglestar={toggleStar}
 					/>
 				{/key}
 			{/if}

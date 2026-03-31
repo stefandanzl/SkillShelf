@@ -21,12 +21,11 @@ export function getNextReviewDate(level: number): Date {
 export function processAnswer(
 	current: Pick<CardProgressRecord, 'level' | 'streak'>,
 	wasCorrect: boolean
-): { level: number; mastered: boolean; last_reviewed: string; next_review: string; streak: number } {
+): { level: number; last_reviewed: string; next_review: string; streak: number } {
 	if (wasCorrect) {
 		const newLevel = Math.min((current.level ?? 0) + 1, 7);
 		return {
 			level: newLevel,
-			mastered: newLevel >= 7,
 			last_reviewed: new Date().toISOString(),
 			next_review: getNextReviewDate(newLevel).toISOString(),
 			streak: (current.streak ?? 0) + 1
@@ -35,7 +34,6 @@ export function processAnswer(
 		const newLevel = Math.max((current.level ?? 1) - 1, 1);
 		return {
 			level: newLevel,
-			mastered: false,
 			last_reviewed: new Date().toISOString(),
 			next_review: getNextReviewDate(newLevel).toISOString(),
 			streak: 0

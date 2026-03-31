@@ -128,8 +128,8 @@ export type CardProgressRecord = {
 	id: string
 	last_reviewed?: IsoDateString
 	level?: number
-	mastered?: boolean
 	next_review?: IsoDateString
+	starred?: boolean
 	streak?: number
 	updated: IsoAutoDateString
 	user?: RecordIdString

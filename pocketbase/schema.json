@@ -977,8 +977,8 @@
 			},
 			{
 				"hidden": false,
-				"id": "cp_mastered",
-				"name": "mastered",
+				"id": "cp_starred",
+				"name": "starred",
 				"presentable": false,
 				"required": false,
 				"system": false,

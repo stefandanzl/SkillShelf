@@ -4,11 +4,13 @@
 		back: string;
 		level?: number;
 		flipped?: boolean;
+		starred?: boolean;
 		onswipeleft?: () => void;
 		onswiperight?: () => void;
 		onflip?: () => void;
+		ontogglestar?: () => void;
 	}
-	let { front, back, level = 1, flipped = false, onswipeleft, onswiperight, onflip }: Props = $props();
+	let { front, back, level = 1, flipped = false, starred = false, onswipeleft, onswiperight, onflip, ontogglestar }: Props = $props();
 
 	let dragX = $state(0);
 	let dragging = $state(false);
@@ -126,6 +128,11 @@
 			: 0}deg) translateX({dragX * flippedCoeff}px)"
 	>
 		<div class="card-face card-front">
+		<button class="card-face__star" class:card-face__star--active={starred} onpointerdown={(e) => e.stopPropagation()} onclick={(e) => { e.stopPropagation(); ontogglestar?.(); }} aria-label="Toggle star">
+				<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+					<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+				</svg>
+			</button>
 			<div class="card-face__content">{front}</div>
 			<div class="card-face__footer">
 				<button class="card-face__tts" aria-label="Text to speech">
@@ -147,6 +154,11 @@
 			</div>
 		</div>
 		<div class="card-face card-back">
+		<button class="card-face__star" class:card-face__star--active={starred} onpointerdown={(e) => e.stopPropagation()} onclick={(e) => {  e.stopPropagation(); ontogglestar?.(); }} aria-label="Toggle star">
+				<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+					<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+				</svg>
+			</button>
 			<div class="card-face__content">{back}</div>
 			<div class="card-face__footer">
 				<button class="card-face__tts" aria-label="Text to speech">
@@ -249,5 +261,32 @@
 	.card-face__level {
 		font-size: var(--font-size-sm);
 		color: var(--color-text-secondary);
+	}
+	.card-face__star {
+		position: absolute;
+		top: var(--space-md);
+		right: var(--space-md);
+		width: 32px;
+		height: 32px;
+		border-radius: 50%;
+		background: var(--color-surface);
+		color: var(--color-text-secondary);
+		border: none;
+		cursor: pointer;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		transition: all 0.2s ease;
+	}
+	.card-face__star:hover {
+		background: var(--color-surface-hover);
+		color: var(--color-warning);
+		transform: scale(1.1);
+	}
+	.card-face__star--active {
+		color: var(--color-warning);
+	}
+	.card-face__star--active svg {
+		fill: currentColor;
 	}
 </style>

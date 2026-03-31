@@ -91,6 +91,15 @@ export async function deleteCard(pb: TypedPocketBase, id: string | undefined): P
 	if (!id) {
 		throw new Error('id empty: ' + id);
 	}
+	// Clean up associated progress records
+	try {
+		const progressRecords = await pb.collection('card_progress').getList(1, 50, {
+			filter: `card = "${id}"`
+		});
+		await Promise.all(progressRecords.items.map(p => pb.collection('card_progress').delete(p.id)));
+	} catch (e) {
+		// Progress cleanup is best-effort
+	}
 	await pb.collection('cards').delete(id);
 }
 
@@ -125,7 +134,8 @@ export async function submitAnswer(
 	pb: TypedPocketBase,
 	card: CardsRecord,
 	existingProgress: CardProgressRecord | null,
-	wasCorrect: boolean
+	wasCorrect: boolean,
+	starred?: boolean
 ): Promise<CardProgressRecord> {
 	const userId = pb.authStore.record?.id;
 	if (!userId) throw new Error('Not authenticated');
@@ -134,14 +144,16 @@ export async function submitAnswer(
 	const update = processAnswer(current as CardProgressRecord, wasCorrect);
 
 	if (existingProgress) {
-		return pb.collection('card_progress').update(existingProgress.id, update);
+		const data: Record<string, unknown> = { ...update };
+		if (starred !== undefined) data.starred = starred;
+		return pb.collection('card_progress').update(existingProgress.id, data);
 	} else {
 		return pb.collection('card_progress').create({
 			user: userId,
 			card: card.id,
 			box: card.box,
 			level: update.level,
-			mastered: update.mastered,
+			starred: starred ?? false,
 			last_reviewed: update.last_reviewed,
 			next_review: update.next_review,
 			streak: update.streak
@@ -152,7 +164,7 @@ export async function submitAnswer(
 // ── Level counts (for Leitner grid) ──────────────────────────────────────────
 
 export function buildLevelCounts(progressList: CardProgressRecord[], totalCards: number): number[] {
-	// returns array of 8: index 0-6 = levels 1-7, index 7 = mastered
+	// returns array of 8: index 0-6 = levels 1-7, index 7 = starred
 	const counts = Array(8).fill(0);
 	const progressMap = new Map(progressList.map((p) => [p.card, p]));
 
@@ -161,7 +173,7 @@ export function buildLevelCounts(progressList: CardProgressRecord[], totalCards:
 	counts[0] += totalCards - withProgress; // unreviewed → level 1
 
 	for (const p of progressList) {
-		if (p.mastered) {
+		if (p.starred) {
 			counts[7]++;
 		} else {
 			// Clamp level to valid range 1-7, default to 1 if null/undefined/invalid
