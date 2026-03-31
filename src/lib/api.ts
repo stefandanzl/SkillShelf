@@ -114,25 +114,11 @@ export async function getDueCards(
 	const progressList = await getProgressForBox(pb, boxId);
 	const progressMap = new Map(progressList.map((p) => [p.card, p]));
 
-	const now = new Date();
-	const result: Array<{ card: CardsRecord; progress: CardProgressRecord | null }> = [];
-
-	for (const card of cards) {
-		const progress = progressMap.get(card.id) ?? null;
-		// No progress = never reviewed = always due
-		if (!progress) {
-			result.push({ card, progress: null });
-			continue;
-		}
-		if (!progress.mastered) {
-			const nextReview = progress.next_review ? new Date(progress.next_review) : null;
-			if (!nextReview || nextReview <= now) {
-				result.push({ card, progress });
-			}
-		}
-	}
-
-	return result;
+	// Return all cards with their progress
+	return cards.map(card => ({
+		card,
+		progress: progressMap.get(card.id) ?? null
+	}));
 }
 
 export async function submitAnswer(

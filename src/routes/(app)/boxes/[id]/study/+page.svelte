@@ -164,12 +164,12 @@
 
 	async function handleSwipeLeft() {
 		// if (!showResult) return;
-		await handleAnswer(false, true);
+		await handleAnswer(false, false);
 	}
 
 	async function handleSwipeRight() {
-		if (!showResult) return;
-		await handleAnswer(true, true);
+		// if (!showResult) return;
+		await handleAnswer(true, false);
 	}
 </script>
 
@@ -243,6 +243,7 @@
 			{#if currentCard}
 				<Flashcard
 					bind:this={flashcardRef}
+t				key={currentCard.id}
 					front={currentCard.front}
 					back={currentCard.back}
 					level={currentProgress?.level ?? 1}

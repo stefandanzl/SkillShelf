@@ -1,7 +1,6 @@
 import { browser } from '$app/environment';
 import { pb } from '$lib/pocketbase.svelte';
 import { getBox, getCards, getProgressForBox, buildLevelCounts } from '$lib/api';
-import { isDueToday } from '$lib/leitner';
 import { error } from '@sveltejs/kit';
 import type { PageLoad } from './$types';
 
@@ -19,15 +18,10 @@ export const load: PageLoad = async ({ params }) => {
     ]);
 
     const levelCounts = buildLevelCounts(progress, cards.length);
-
-    const reviewedIds = new Set(progress.map((p) => p.card));
     const progressMap = new Map(progress.map((p) => [p.card, p]));
 
-    const dueCount = cards.filter((c) => {
-      if (!reviewedIds.has(c.id)) return true;
-      const p = progressMap.get(c.id);
-      return p && !p.mastered && isDueToday(p.next_review);
-    }).length;
+    // All cards are always available - no spaced repetition
+    const dueCount = cards.length;
 
     return { box, cards, progress, levelCounts, dueCount, progressMap: Object.fromEntries(progressMap) };
   } catch (err) {

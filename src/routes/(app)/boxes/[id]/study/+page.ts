@@ -10,7 +10,9 @@ export const load: PageLoad = async ({ params }) => {
   }
 
   try {
-    const dueCards = await getDueCards(pb as any, params.id);
+    const user = pb.authStore.record as any;
+    const disableSpacedRepetition = user?.disableSpacedRepetition ?? false;
+    const dueCards = await getDueCards(pb as any, params.id, disableSpacedRepetition);
     return { dueCards, boxId: params.id };
   } catch (err) {
     console.error('Error loading due cards:', err);
