@@ -32,11 +32,12 @@ export function processAnswer(
 			streak: (current.streak ?? 0) + 1
 		};
 	} else {
+		const newLevel = Math.max((current.level ?? 1) - 1, 1);
 		return {
-			level: 1,
+			level: newLevel,
 			mastered: false,
 			last_reviewed: new Date().toISOString(),
-			next_review: getNextReviewDate(1).toISOString(),
+			next_review: getNextReviewDate(newLevel).toISOString(),
 			streak: 0
 		};
 	}
