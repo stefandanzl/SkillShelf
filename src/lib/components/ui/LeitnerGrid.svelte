@@ -5,9 +5,9 @@
     onselect?: (level: number) => void;
     dangerMode?: boolean;
   }
-  let { counts = Array(8).fill(0), selected = [], onselect, dangerMode = false }: Props = $props();
+  let { counts = Array(7).fill(0), selected = [], onselect, dangerMode = false }: Props = $props();
 
-  const levels = [1, 2, 3, 4, 5, 6, 7, 0]; // 0 = starred (star)
+  const levels = [1, 2, 3, 4, 5, 6, 7];
 </script>
 
 <div class="leitner-grid">
@@ -20,13 +20,7 @@
         class:leitner-grid__btn--danger={dangerMode && selected.includes(level)}
         onclick={() => onselect?.(level)}
       >
-        {#if level === 0}
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor" stroke="none">
-            <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
-          </svg>
-        {:else}
-          {level}
-        {/if}
+        {level}
       </button>
     </div>
   {/each}
@@ -35,7 +29,7 @@
 <style>
   .leitner-grid {
     display: grid;
-    grid-template-columns: repeat(8, 1fr);
+    grid-template-columns: repeat(7, 1fr);
     gap: var(--space-xs);
     padding: 0 var(--space-md);
   }

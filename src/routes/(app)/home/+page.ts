@@ -63,8 +63,8 @@ export const load: PageLoad = async () => {
 			const cards = cardsByBox.get(box.id) ?? [];
 			const progress = progressByBox.get(box.id) ?? [];
 
-			const levelCounts = buildLevelCounts(progress, cards.length);
-			const masteredCount = levelCounts[7];
+			const { levels: levelCounts } = buildLevelCounts(progress, cards.length);
+			const masteredCount = levelCounts[6];
 			const completionPct = cards.length > 0 ? Math.round((masteredCount / cards.length) * 100) : 0;
 
 			const reviewedIds = new Set(progress.map((p) => p.card));

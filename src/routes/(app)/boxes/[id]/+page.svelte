@@ -21,13 +21,14 @@
 
   const box = $derived(data.box);
   const cards = $derived(data.cards ?? []);
-  const levelCounts = $derived(data.levelCounts ?? Array(8).fill(0));
+  const levelCounts = $derived(data.levelCounts ?? Array(7).fill(0));
+  const starredCount = $derived(data.starredCount ?? 0);
   const dueCount = $derived(data.dueCount ?? 0);
   const progressMap = $derived(data.progressMap ?? {});
 
   const boxColor = $derived(BOX_COLOR_MAP[box?.color ?? ''] ?? 'var(--color-primary)');
   const totalCards = $derived(cards.length);
-  const masteredCount = $derived(levelCounts[7] ?? 0);
+  const masteredCount = $derived(levelCounts[6] ?? 0);
   const completionPct = $derived(totalCards > 0 ? Math.round((masteredCount / totalCards) * 100) : 0);
 
   let showMenu = $state(false);
@@ -40,7 +41,12 @@
   const filteredCards = $derived(
     cards.filter((c: CardsRecord) => {
       const matchSearch = !searchQuery || c.front.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchLevel = selectedLevels.length === 0 || selectedLevels.includes((progressMap[c.id]?.level ?? 1));
+      const progress = progressMap[c.id];
+      const levelFilters = selectedLevels.filter(l => l >= 1);
+      const starredFilter = selectedLevels.includes(-1);
+      const matchLevel = selectedLevels.length === 0 ||
+        (levelFilters.length > 0 && levelFilters.includes(progress?.level ?? 1)) ||
+        (starredFilter && progress?.starred);
       return matchSearch && matchLevel;
     })
   );
@@ -100,6 +106,19 @@
     selected={selectedLevels}
     onselect={toggleLevel}
   />
+
+  {#if starredCount > 0}
+    <button
+      class="box-detail__starred-badge"
+      class:box-detail__starred-badge--active={selectedLevels.includes(-1)}
+      onclick={() => toggleLevel(-1)}
+    >
+      <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor" stroke="none">
+        <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+      </svg>
+      <span>{starredCount} starred</span>
+    </button>
+  {/if}
 
   <!-- Page dots -->
   <div class="box-detail__dots">
@@ -238,6 +257,30 @@
     font-weight: 700;
     color: var(--color-text-primary);
     margin: 0;
+  }
+
+  .box-detail__starred-badge {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+    margin: 0 var(--space-md);
+    padding: var(--space-xs) var(--space-md);
+    border-radius: var(--radius-full, 9999px);
+    background: var(--color-surface);
+    border: 2px solid transparent;
+    color: var(--color-warning);
+    font-size: var(--font-size-sm);
+    font-weight: 600;
+    width: fit-content;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+  }
+  .box-detail__starred-badge:hover {
+    background: var(--color-surface-alt);
+  }
+  .box-detail__starred-badge--active {
+    border-color: var(--color-primary);
+    background: var(--color-primary-dim);
   }
 
   .box-detail__dots {

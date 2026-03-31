@@ -17,13 +17,13 @@ export const load: PageLoad = async ({ params }) => {
       getProgressForBox(pb as any, params.id),
     ]);
 
-    const levelCounts = buildLevelCounts(progress, cards.length);
+    const { levels: levelCounts, starred: starredCount } = buildLevelCounts(progress, cards.length);
     const progressMap = new Map(progress.map((p) => [p.card, p]));
 
     // All cards are always available - no spaced repetition
     const dueCount = cards.length;
 
-    return { box, cards, progress, levelCounts, dueCount, progressMap: Object.fromEntries(progressMap) };
+    return { box, cards, progress, levelCounts, starredCount, dueCount, progressMap: Object.fromEntries(progressMap) };
   } catch (err) {
     console.error('Error loading box:', err);
     error(404, 'Box not found');

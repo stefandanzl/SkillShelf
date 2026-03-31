@@ -163,23 +163,25 @@ export async function submitAnswer(
 
 // ── Level counts (for Leitner grid) ──────────────────────────────────────────
 
-export function buildLevelCounts(progressList: CardProgressRecord[], totalCards: number): number[] {
-	// returns array of 8: index 0-6 = levels 1-7, index 7 = starred
-	const counts = Array(8).fill(0);
+export function buildLevelCounts(
+	progressList: CardProgressRecord[],
+	totalCards: number
+): { levels: number[]; starred: number } {
+	// levels: array of 7, index 0-6 = levels 1-7
+	// starred: count of starred cards (independent of level)
+	const levels = Array(7).fill(0);
+	let starred = 0;
 	const progressMap = new Map(progressList.map((p) => [p.card, p]));
 
 	// Cards with no progress record = level 1
 	const withProgress = progressMap.size;
-	counts[0] += totalCards - withProgress; // unreviewed → level 1
+	levels[0] += totalCards - withProgress; // unreviewed → level 1
 
 	for (const p of progressList) {
-		if (p.starred) {
-			counts[7]++;
-		} else {
-			// Clamp level to valid range 1-7, default to 1 if null/undefined/invalid
-			const level = Math.max(1, Math.min(7, p.level ?? 1));
-			counts[level - 1]++;
-		}
+		if (p.starred) starred++;
+		// Starred cards still count in their level bucket
+		const level = Math.max(1, Math.min(7, p.level ?? 1));
+		levels[level - 1]++;
 	}
-	return counts;
+	return { levels, starred };
 }
