@@ -15,6 +15,10 @@
 	let front = $derived(data.card?.front ?? '');
 	let back = $derived(data.card?.back ?? '');
 	const level = $derived(data.progress?.level ?? 1);
+	let starred = $state(false);
+	$effect(() => {
+		starred = data.progress?.starred ?? false;
+	});
 
 	const canSave = $derived(front.trim().length > 0 && back.trim().length > 0);
 	let showDeleteConfirm = $state(false);
@@ -27,6 +31,20 @@
 		saveError = '';
 		try {
 			await updateCard(pb as any, cardId, { front: front.trim(), back: back.trim() });
+			// Persist starred state
+			if (data.progress) {
+				await pb.collection('card_progress').update(data.progress.id, { starred });
+			} else if (starred) {
+				const userId = pb.authStore.record?.id;
+				await pb.collection('card_progress').create({
+					user: userId,
+					card: cardId,
+					box: boxId,
+					level: 1,
+					starred: true,
+					streak: 0
+				});
+			}
 			await invalidateAll();
 			goto(`/boxes/${boxId}`);
 		} catch (e: any) {
@@ -61,22 +79,41 @@
 	</TopBar>
 
 	<div class="card-edit__form">
-		<!-- Level indicator -->
-		<div class="card-edit__level">
-			<svg
-				width="16"
-				height="16"
-				viewBox="0 0 24 24"
-				fill="none"
-				stroke="currentColor"
-				stroke-width="2"
-				stroke-linecap="round"
-				stroke-linejoin="round"
-			>
-				<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
-				<polyline points="22 4 12 14.01 9 11.01"></polyline>
-			</svg>
-			<span>{$t('card.level_prefix')} {level}</span>
+		<!-- Level & star indicator -->
+		<div class="card-edit__meta">
+			<div class="card-edit__level">
+				<svg
+					width="16"
+					height="16"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+				>
+					<path d="M22 11.08V12a10 10 0 1 1-5.93-9.14"></path>
+					<polyline points="22 4 12 14.01 9 11.01"></polyline>
+				</svg>
+				<span>{$t('card.level_prefix')} {level}</span>
+			</div>
+			<button class="card-edit__star" class:card-edit__star--active={starred} onclick={() => (starred = !starred)}>
+				<svg
+					width="16"
+					height="16"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+				>
+					<polygon
+						points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
+					></polygon>
+				</svg>
+				<span>{starred ? 'Starred' : 'Star'}</span>
+			</button>
 		</div>
 
 		<div class="card-edit__field">
@@ -147,6 +184,12 @@
 		gap: var(--space-md);
 		padding: 0 var(--space-md) var(--space-xl);
 	}
+	.card-edit__meta {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: var(--space-sm);
+	}
 	.card-edit__level {
 		display: flex;
 		align-items: center;
@@ -156,6 +199,24 @@
 		background: var(--color-surface);
 		border-radius: var(--radius-md);
 		padding: var(--space-sm) var(--space-md);
+	}
+	.card-edit__star {
+		display: flex;
+		align-items: center;
+		gap: var(--space-xs);
+		font-size: var(--font-size-sm);
+		color: var(--color-text-secondary);
+		background: var(--color-surface);
+		border-radius: var(--radius-md);
+		padding: var(--space-sm) var(--space-md);
+		cursor: pointer;
+		transition: all var(--transition-fast);
+	}
+	.card-edit__star--active {
+		color: var(--color-warning);
+	}
+	.card-edit__star--active svg {
+		fill: currentColor;
 	}
 	.card-edit__field {
 		display: flex;
