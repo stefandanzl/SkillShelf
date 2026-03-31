@@ -6,6 +6,7 @@ import type { UsersRecord } from '$lib/pocketbase-types';
 register('en', () => import('./locales/en.json'));
 register('de', () => import('./locales/de.json'));
 
+const FALLBACK_LANG = 'en';
 const LOCALE_STORAGE_KEY = 'skillshelf_locale';
 
 function getStoredLocale(): string | null {
@@ -26,11 +27,11 @@ function getUserLocale(): string | null {
 
 function getInitialLocale(): string {
 	// Priority: user profile > localStorage > browser > fallback
-	return getUserLocale() || getStoredLocale() || (browser ? getLocaleFromNavigator() : 'en') || 'en';
+	return getUserLocale() || getStoredLocale() || (browser ? getLocaleFromNavigator() : FALLBACK_LANG) || FALLBACK_LANG;
 }
 
 init({
-	fallbackLocale: 'en',
+	fallbackLocale: FALLBACK_LANG,
 	initialLocale: getInitialLocale()
 });
 
