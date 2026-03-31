@@ -27,6 +27,7 @@
 	let done = $state(false);
 	let submitting = $state(false);
 	let flashcardRef: { triggerSwipe: (direction: 'left' | 'right') => Promise<void> } | null = $state(null);
+	let showButtons = $state(true);
 
 	const currentEntry = $derived(
 		dueCards[currentIndex] as { card: CardsRecord; progress: CardProgressRecord | null } | undefined
@@ -215,7 +216,12 @@
 				</span>
 			{/snippet}
 			{#snippet right()}
-				<IconButton title="Card grid">
+				<IconButton
+					title="Card grid"
+					onclick={() => {
+						showButtons = !showButtons;
+					}}
+				>
 					<svg
 						width="20"
 						height="20"
@@ -241,20 +247,22 @@
 
 		<div class="study__card-area" onfocus={(e) => e.currentTarget?.blur()}>
 			{#if currentCard}
-				<Flashcard
-					bind:this={flashcardRef}
-t				key={currentCard.id}
-					front={currentCard.front}
-					back={currentCard.back}
-					level={currentProgress?.level ?? 1}
-					{flipped}
-					onswipeleft={handleSwipeLeft}
-					onswiperight={handleSwipeRight}
-				/>
+				{#key currentCard.id}
+					<Flashcard
+						bind:this={flashcardRef}
+						front={currentCard.front}
+						back={currentCard.back}
+						level={currentProgress?.level ?? 1}
+						{flipped}
+						onswipeleft={handleSwipeLeft}
+						onswiperight={handleSwipeRight}
+						onflip={toggleFlip}
+					/>
+				{/key}
 			{/if}
 		</div>
 
-		<div class="study__actions">
+		<div class="study__actions {showButtons ? '' : 'hidden'}">
 			{#if !showResult}
 				<PillButton
 					onclick={() => {
@@ -347,8 +355,9 @@ t				key={currentCard.id}
 	.study {
 		display: flex;
 		flex-direction: column;
-		height: 100vh;
-		height: 100dvh;
+		height: 100%;
+		/* height: 100vh; */
+		/* height: 100dvh; */
 		overflow: hidden;
 	}
 
@@ -438,5 +447,9 @@ t				key={currentCard.id}
 		color: var(--color-text-secondary);
 		margin: 0;
 		text-align: center;
+	}
+
+	.hidden {
+		display: none;
 	}
 </style>

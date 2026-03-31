@@ -6,8 +6,9 @@
 		flipped?: boolean;
 		onswipeleft?: () => void;
 		onswiperight?: () => void;
+		onflip?: () => void;
 	}
-	let { front, back, level = 1, flipped = false, onswipeleft, onswiperight }: Props = $props();
+	let { front, back, level = 1, flipped = false, onswipeleft, onswiperight, onflip }: Props = $props();
 
 	let dragX = $state(0);
 	let dragging = $state(false);
@@ -26,13 +27,26 @@
 	}
 	function onpointerup(_e: PointerEvent) {
 		if (!dragging) return;
-		dragging = false;
-		if (dragX < -THRESHOLD) {
-			onswipeleft?.();
-		} else if (dragX > THRESHOLD) {
-			onswiperight?.();
+		// Check threshold
+		const shouldSwipeLeft = dragX < -THRESHOLD;
+		const shouldSwipeRight = dragX > THRESHOLD;
+
+		if (shouldSwipeLeft || shouldSwipeRight) {
+			// Keep dragX for smooth handoff to triggerSwipe
+			dragging = false;
+			if (shouldSwipeLeft) {
+				onswipeleft?.();
+			} else {
+				onswiperight?.();
+			}
+		} else {
+			// Below threshold - reset instantly
+			dragX = 0;
+			dragging = false;
 		}
-		dragX = 0;
+	}
+	function ondblclick(e: MouseEvent) {
+		onflip?.();
 	}
 
 	const cardBg = $derived(dragX < -40 ? '#4A1525' : dragX > 40 ? '#1A3A4A' : 'var(--color-surface)');
@@ -44,7 +58,7 @@
 	let resolveAnimation: (() => void) | null = null;
 
 	export function triggerSwipe(direction: 'left' | 'right'): Promise<void> {
-		const targetX = direction === 'left' ? -1200 : 1200;
+		const targetX = direction === 'left' ? -800 : 800;
 		const duration = 350;
 		const startTime = performance.now();
 		const startX_anim = dragX;
@@ -59,7 +73,7 @@
 				const progress = Math.min(elapsed / duration, 1);
 
 				// Ease out cubic
-				const ease = 1 - 0.5; //Math.pow(1 - progress, 3);
+				const ease = 1 - Math.pow(1 - progress, 3);
 				dragX = startX_anim + (targetX - startX_anim) * ease;
 
 				if (progress < 1) {
@@ -69,10 +83,10 @@
 					};
 					var animationId = requestAnimationFrame(animate);
 				} else {
-					// Animation complete
+					// Animation complete - reset dragX before dragging so no transition occurs
 					swipeAnimationEnd = null;
-					dragging = false;
 					dragX = 0;
+					dragging = false;
 					if (direction === 'left') {
 						onswipeleft?.();
 					} else {
@@ -98,6 +112,7 @@
 	{onpointerdown}
 	{onpointermove}
 	{onpointerup}
+	{ondblclick}
 	role="button"
 	tabindex="0"
 	aria-label="Flashcard"
@@ -164,6 +179,17 @@
 		user-select: none;
 		touch-action: pan-y;
 		min-height: 300px;
+		animation: slideUp 0.2s ease-out;
+	}
+	@keyframes slideUp {
+		from {
+			opacity: 0;
+			transform: translateY(60px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
 	}
 	.card-container:active {
 		cursor: grabbing;
@@ -171,13 +197,16 @@
 	.card-inner {
 		position: relative;
 		transform-style: preserve-3d;
-		transition:
-			background 0.2s ease,
-			transform 0.2s ease;
+		transition: background 0.2s ease;
 		width: 100%;
 		height: 100%;
 		min-height: 300px;
 		border-radius: var(--radius-lg);
+	}
+	.card-inner:not(.dragging) {
+		transition:
+			background 0.2s ease,
+			transform 0.2s ease;
 	}
 	.card-face {
 		position: absolute;

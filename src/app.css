@@ -52,7 +52,7 @@
   --transition-slow: 400ms ease;
 
   /* Layout */
-  --content-max-width: 480px;
+  --content-max-width: 580px;
   --desktop-sidebar-w: 240px;
   --bottom-nav-height: 68px;
   --top-bar-height: 56px;
