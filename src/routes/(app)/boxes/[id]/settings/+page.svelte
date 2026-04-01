@@ -7,12 +7,26 @@
   import SettingsGroup from '$lib/components/ui/SettingsGroup.svelte';
   import Toggle from '$lib/components/ui/Toggle.svelte';
   import SegmentedControl from '$lib/components/ui/SegmentedControl.svelte';
+  import { pb } from '$lib/pocketbase.svelte';
+  import { updateBox, deleteBox } from '$lib/api';
+  import type { BoxesColorOptions } from '$lib/pocketbase-types';
+
+  let { data } = $props();
 
   const boxId = $derived($page.params.id);
+  const box = $derived(data.box);
 
   let ttsEnabled = $state(false);
   let learnDirection = $state('front-to-back');
   let selectedColor = $state('blue');
+
+  $effect(() => {
+    if (box) {
+      selectedColor = box.color ?? 'blue';
+      learnDirection = box.learn_direction ?? 'front-to-back';
+      ttsEnabled = !!box.tts_language;
+    }
+  });
 
   const directionSegments = [
     { value: 'front-to-back', label: '→' },
@@ -28,6 +42,24 @@
     { value: 'purple', css: 'var(--color-topic-purple)' },
     { value: 'teal', css: 'var(--color-topic-teal)' },
   ];
+
+  async function handleColorChange(color: string) {
+    selectedColor = color;
+    await updateBox(pb as any, boxId!, { color: color as BoxesColorOptions });
+  }
+
+  async function handleRename() {
+    const newName = prompt($t('box.rename'), box?.name ?? '');
+    if (!newName || newName === box?.name) return;
+    await updateBox(pb as any, boxId!, { name: newName });
+    data.box = { ...box!, name: newName } as typeof box;
+  }
+
+  async function handleDelete() {
+    if (!confirm('Delete this box and all its cards?')) return;
+    await deleteBox(pb as any, boxId!);
+    goto('/home');
+  }
 </script>
 
 <div class="box-settings">
@@ -85,7 +117,7 @@
                 class="color-swatch"
                 class:color-swatch--active={selectedColor === c.value}
                 style="background: {c.css}"
-                onclick={() => selectedColor = c.value}
+                onclick={() => handleColorChange(c.value)}
                 aria-label={c.value}
               ></button>
             {/each}
@@ -117,7 +149,7 @@
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
           {/snippet}
         </SettingsRow>
-        <SettingsRow label={$t('box.rename')} onclick={() => {}}>
+        <SettingsRow label={$t('box.rename')} onclick={handleRename}>
           {#snippet icon()}
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/>
@@ -127,7 +159,7 @@
             <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
           {/snippet}
         </SettingsRow>
-        <SettingsRow label={$t('box.delete')} onclick={() => {}} danger>
+        <SettingsRow label={$t('box.delete')} onclick={handleDelete} danger>
           {#snippet icon()}
             <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
               <polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/>

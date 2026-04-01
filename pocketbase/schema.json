@@ -938,7 +938,7 @@
 				"type": "relation"
 			},
 			{
-				"cascadeDelete": false,
+				"cascadeDelete": true,
 				"collectionId": "cards_",
 				"hidden": false,
 				"id": "cp_card",
@@ -951,7 +951,7 @@
 				"type": "relation"
 			},
 			{
-				"cascadeDelete": false,
+				"cascadeDelete": true,
 				"collectionId": "boxes_",
 				"hidden": false,
 				"id": "cp_box",
@@ -1067,7 +1067,7 @@
 				"type": "text"
 			},
 			{
-				"cascadeDelete": false,
+				"cascadeDelete": true,
 				"collectionId": "boxes_",
 				"hidden": false,
 				"id": "cards_box",

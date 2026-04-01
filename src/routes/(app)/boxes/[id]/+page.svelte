@@ -8,10 +8,7 @@
   import PillButton from '$lib/components/ui/PillButton.svelte';
   import LeitnerGrid from '$lib/components/ui/LeitnerGrid.svelte';
   import CardItem from '$lib/components/ui/CardItem.svelte';
-  import Sheet from '$lib/components/ui/Sheet.svelte';
   import SegmentedControl from '$lib/components/ui/SegmentedControl.svelte';
-  import { pb } from '$lib/pocketbase.svelte';
-  import { deleteBox } from '$lib/api';
   import { BOX_COLOR_MAP } from '$lib/leitner';
   import { setStudyCards } from '$lib/study-store.svelte';
 	import type { CardsRecord } from '$lib/pocketbase-types.js';
@@ -32,13 +29,10 @@
   const masteredCount = $derived(levelCounts[6] ?? 0);
   const completionPct = $derived(totalCards > 0 ? Math.round((masteredCount / totalCards) * 100) : 0);
 
-  let showMenu = $state(false);
   let showSearch = $state(false);
   let searchQuery = $state('');
   let selectedLevels = $state<number[]>([]);
   let currentPage = $state(0);
-  let deleting = $state(false);
-
   const filteredCards = $derived(
     cards.filter((c: CardsRecord) => {
       const matchSearch = !searchQuery || c.front.toLowerCase().includes(searchQuery.toLowerCase());
@@ -60,17 +54,7 @@
     }
   }
 
-  async function handleDelete() {
-    if (!confirm('Delete this box and all its cards?')) return;
-    deleting = true;
-    try {
-      await deleteBox(pb as any, boxId);
-      goto('/home');
-    } catch (e: any) {
-      alert(e?.message ?? 'Failed to delete box');
-      deleting = false;
-    }
-  }
+
 </script>
 
 <div class="box-detail">
@@ -87,7 +71,7 @@
           <line x1="12" y1="5" x2="12" y2="19"/><line x1="5" y1="12" x2="19" y2="12"/>
         </svg>
       </IconButton>
-      <IconButton onclick={() => showMenu = true} title="More options">
+      <IconButton onclick={() => goto(`/boxes/${boxId}/settings`)} title="More options">
         <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
           <circle cx="12" cy="5" r="1"/><circle cx="12" cy="12" r="1"/><circle cx="12" cy="19" r="1"/>
         </svg>
@@ -209,25 +193,6 @@
   </div>
 </div>
 
-<!-- Box menu sheet -->
-<Sheet open={showMenu} title={$t('box.settings_title')} onclose={() => showMenu = false}>
-  {#snippet children()}
-    <div class="box-menu">
-      <button class="box-menu__item" onclick={() => { showMenu = false; goto(`/boxes/${boxId}/settings`); }}>
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41M4.93 4.93l1.41 1.41"/></svg>
-        <span>{$t('box.settings_title')}</span>
-      </button>
-      <button class="box-menu__item" onclick={() => showMenu = false}>
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
-        <span>{$t('box.export')}</span>
-      </button>
-      <button class="box-menu__item box-menu__item--danger" onclick={() => { showMenu = false; handleDelete(); }} disabled={deleting}>
-        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="3 6 5 6 21 6"/><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"/></svg>
-        <span>{$t('box.delete')}</span>
-      </button>
-    </div>
-  {/snippet}
-</Sheet>
 
 <style>
   .box-detail {
@@ -362,25 +327,4 @@
     padding: 0 var(--space-md);
   }
 
-  /* Box menu */
-  .box-menu {
-    display: flex;
-    flex-direction: column;
-    gap: 2px;
-  }
-  .box-menu__item {
-    display: flex;
-    align-items: center;
-    gap: var(--space-md);
-    padding: var(--space-md);
-    border-radius: var(--radius-md);
-    background: var(--color-surface-alt);
-    color: var(--color-text-primary);
-    width: 100%;
-    font-size: var(--font-size-base);
-    cursor: pointer;
-    transition: background var(--transition-fast);
-  }
-  .box-menu__item:hover { background: var(--color-border); }
-  .box-menu__item--danger { color: var(--color-danger); }
 </style>

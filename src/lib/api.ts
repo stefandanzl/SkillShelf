@@ -91,15 +91,15 @@ export async function deleteCard(pb: TypedPocketBase, id: string | undefined): P
 	if (!id) {
 		throw new Error('id empty: ' + id);
 	}
-	// Clean up associated progress records
-	try {
-		const progressRecords = await pb.collection('card_progress').getList(1, 50, {
-			filter: `card = "${id}"`
-		});
-		await Promise.all(progressRecords.items.map(p => pb.collection('card_progress').delete(p.id)));
-	} catch (e) {
-		// Progress cleanup is best-effort
-	}
+	// Clean up associated progress records  !!! Not needed with cascadeDelete: true set in Pocketbase!
+	// try {
+	// 	const progressRecords = await pb.collection('card_progress').getList(1, 50, {
+	// 		filter: `card = "${id}"`
+	// 	});
+	// 	await Promise.all(progressRecords.items.map(p => pb.collection('card_progress').delete(p.id)));
+	// } catch (e) {
+	// 	// Progress cleanup is best-effort
+	// }
 	await pb.collection('cards').delete(id);
 }
 
