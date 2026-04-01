@@ -5,7 +5,7 @@
   import TopBar from '$lib/components/ui/TopBar.svelte';
   import PillButton from '$lib/components/ui/PillButton.svelte';
   import { pb } from '$lib/pocketbase.svelte';
-  import { createCard } from '$lib/api';
+  import { createCard, getCards } from '$lib/api';
 
   const boxId = $derived($page.params.id);
 
@@ -14,6 +14,10 @@
   let fileName = $state('');
   let isDragOver = $state(false);
   let fileError = $state('');
+
+  // ── Text input state ────────────────────────────────────────────────────────
+  let textInput = $state('');
+  let pasting = $state(false);
 
   // ── Parse options ───────────────────────────────────────────────────────────
   type Delimiter = 'auto' | 'semicolon' | 'comma' | 'tab';
@@ -27,6 +31,9 @@
   let importing = $state(false);
   let importProgress = $state(0);
   let importError = $state('');
+  let importComplete = $state(false);
+  let createdCount = $state(0);
+  let skippedCount = $state(0);
 
   // ── File input ref ──────────────────────────────────────────────────────────
   let fileInput: HTMLInputElement | undefined = $state();
@@ -169,10 +176,38 @@
     fileContent = '';
     fileName = '';
     fileError = '';
+    textInput = '';
     importing = false;
     importProgress = 0;
     importError = '';
+    importComplete = false;
+    createdCount = 0;
+    skippedCount = 0;
     if (fileInput) fileInput.value = '';
+  }
+
+  // ── Text input handling ───────────────────────────────────────────────────────
+  async function handlePaste() {
+    pasting = true;
+    try {
+      const text = await navigator.clipboard.readText();
+      textInput = text;
+    } catch (e) {
+      fileError = 'Failed to read from clipboard. Please paste manually.';
+    } finally {
+      pasting = false;
+    }
+  }
+
+  function handleParseText() {
+    if (!textInput.trim()) return;
+    fileError = '';
+    fileName = 'pasted-text.txt';
+    fileContent = textInput;
+    // Reset options for fresh auto-detection
+    delimiterChoice = 'auto';
+    // Auto-detect header from first row
+    autoDetectHeader(textInput);
   }
 
   // ── Import ──────────────────────────────────────────────────────────────────
@@ -181,17 +216,35 @@
     importing = true;
     importProgress = 0;
     importError = '';
+    importComplete = false;
+    createdCount = 0;
+    skippedCount = 0;
 
     try {
+      // Fetch existing cards for deduplication
+      const existingCards = await getCards(pb as any, boxId);
+      const existingSignatures = new Set(
+        existingCards.map(c => `${c.front ?? ''}|||${c.back ?? ''}`)
+      );
+
       for (let i = 0; i < validCards.length; i++) {
         const card = validCards[i];
-        await createCard(pb as any, boxId, {
-          front: card.front,
-          back: card.back
-        });
+        const signature = `${card.front}|||${card.back}`;
+
+        if (existingSignatures.has(signature)) {
+          skippedCount++;
+        } else {
+          await createCard(pb as any, boxId, {
+            front: card.front,
+            back: card.back
+          });
+          createdCount++;
+          existingSignatures.add(signature); // Also skip duplicates within the import itself
+        }
         importProgress = i + 1;
       }
-      goto(`/boxes/${boxId}`);
+      importComplete = true;
+      importing = false;
     } catch (e: any) {
       importError = `Import failed at card ${importProgress + 1}: ${e?.message ?? 'Unknown error'}`;
       importing = false;
@@ -273,6 +326,41 @@
         onchange={handleFileInput}
         class="sr-only"
       />
+
+      <!-- Text input area -->
+      <div class="text-input-area">
+        <div class="text-input-header">
+          <span class="text-input-label">Or paste your text directly:</span>
+          <button
+            class="paste-button"
+            onclick={handlePaste}
+            disabled={pasting}
+          >
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M16 4h2a2 2 0 0 1 2 2v14a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h2"/>
+              <rect x="8" y="2" width="8" height="4" rx="1" ry="1"/>
+            </svg>
+            {pasting ? 'Pasting...' : 'Paste Text'}
+          </button>
+        </div>
+        <textarea
+          bind:value={textInput}
+          class="text-textarea"
+          placeholder="Paste your CSV/text content here...
+Example:
+front;back
+Question 1;Answer 1
+Question 2;Answer 2"
+          rows="6"
+        ></textarea>
+        <button
+          class="parse-button"
+          onclick={handleParseText}
+          disabled={!textInput.trim()}
+        >
+          Parse Now
+        </button>
+      </div>
 
       {#if fileError}
         <p class="error-text">{fileError}</p>
@@ -384,17 +472,54 @@
         <p class="progress-text">Importing {importProgress} / {cardCount}...</p>
       {/if}
 
+      <!-- Import complete results -->
+      {#if importComplete}
+        <div class="import-results">
+          <div class="import-results__row">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="import-results__icon import-results__icon--success">
+              <polyline points="20 6 9 17 4 12"/>
+            </svg>
+            <span class="import-results__text">
+              <strong>{createdCount}</strong> cards created
+            </span>
+          </div>
+          {#if skippedCount > 0}
+            <div class="import-results__row">
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="import-results__icon import-results__icon--skipped">
+                <circle cx="12" cy="12" r="10"/>
+                <line x1="12" y1="8" x2="12" y2="12"/>
+                <line x1="12" y1="16" x2="12.01" y2="16"/>
+              </svg>
+              <span class="import-results__text">
+                <strong>{skippedCount}</strong> skipped (duplicates)
+              </span>
+            </div>
+          {/if}
+        </div>
+      {/if}
+
       <!-- Import button -->
-      <PillButton
-        onclick={handleImport}
-        disabled={importing || validCards.length === 0}
-      >
-        {#if importing}
-          Importing {importProgress} / {cardCount}...
-        {:else}
-          Import {cardCount} Cards
-        {/if}
-      </PillButton>
+      {#if !importComplete}
+        <PillButton
+          onclick={handleImport}
+          disabled={importing || validCards.length === 0}
+        >
+          {#if importing}
+            Importing {importProgress} / {cardCount}...
+          {:else}
+            Import {cardCount} Cards
+          {/if}
+        </PillButton>
+      {:else}
+        <div class="action-buttons">
+          <PillButton onclick={() => goto(`/boxes/${boxId}`)}>
+            Done
+          </PillButton>
+          <PillButton onclick={clearFile} variant="secondary">
+            Import More
+          </PillButton>
+        </div>
+      {/if}
     {/if}
   </div>
 </div>
@@ -505,6 +630,83 @@
     margin: 0;
     font-size: var(--font-size-sm);
     color: var(--color-text-secondary);
+  }
+
+  /* ── Text input area ───────────────────────────────────────────────────────── */
+  .text-input-area {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+  }
+  .text-input-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  .text-input-label {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+  }
+  .paste-button {
+    display: flex;
+    align-items: center;
+    gap: var(--space-xs);
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-sm);
+    padding: var(--space-xs) var(--space-sm);
+    color: var(--color-text-primary);
+    font-size: var(--font-size-sm);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+  }
+  .paste-button:hover:not(:disabled) {
+    border-color: var(--color-primary);
+    color: var(--color-primary);
+  }
+  .paste-button:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+  }
+  .text-textarea {
+    width: 100%;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: var(--space-md);
+    color: var(--color-text-primary);
+    font-size: var(--font-size-sm);
+    font-family: monospace;
+    resize: vertical;
+    min-height: 150px;
+    transition: border-color var(--transition-fast);
+  }
+  .text-textarea:focus {
+    outline: none;
+    border-color: var(--color-primary);
+  }
+  .text-textarea::placeholder {
+    color: var(--color-text-secondary);
+    opacity: 0.7;
+  }
+  .parse-button {
+    background: var(--color-primary);
+    color: var(--color-primary-text);
+    border: none;
+    border-radius: var(--radius-md);
+    padding: var(--space-sm) var(--space-md);
+    font-size: var(--font-size-sm);
+    font-weight: 500;
+    cursor: pointer;
+    transition: opacity var(--transition-fast);
+    align-self: flex-start;
+  }
+  .parse-button:hover:not(:disabled) {
+    opacity: 0.9;
+  }
+  .parse-button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
   }
 
   .sr-only {
@@ -715,5 +917,46 @@
     font-size: var(--font-size-sm);
     color: var(--color-danger);
     margin: 0;
+  }
+
+  /* ── Import results ──────────────────────────────────────────────────────── */
+  .import-results {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: var(--space-md);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+  }
+  .import-results__row {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+  }
+  .import-results__icon {
+    flex-shrink: 0;
+  }
+  .import-results__icon--success {
+    color: var(--color-success, #22c55e);
+  }
+  .import-results__icon--skipped {
+    color: var(--color-text-secondary);
+  }
+  .import-results__text {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-primary);
+  }
+  .import-results__text strong {
+    font-weight: 600;
+  }
+
+  /* ── Action buttons ───────────────────────────────────────────────────────── */
+  .action-buttons {
+    display: flex;
+    gap: var(--space-sm);
+  }
+  .action-buttons .pill-btn {
+    flex: 1;
   }
 </style>

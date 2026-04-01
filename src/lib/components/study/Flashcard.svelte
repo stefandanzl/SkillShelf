@@ -7,33 +7,43 @@
 		starred?: boolean;
 		onswipeleft?: () => void;
 		onswiperight?: () => void;
+		onswipedown?: () => void;
 		onflip?: () => void;
 		ontogglestar?: () => void;
 	}
-	let { front, back, level = 1, flipped = false, starred = false, onswipeleft, onswiperight, onflip, ontogglestar }: Props = $props();
+	let { front, back, level = 1, flipped = false, starred = false, onswipeleft, onswiperight, onswipedown, onflip, ontogglestar }: Props = $props();
 
 	let dragX = $state(0);
+	let dragY = $state(0);
 	let dragging = $state(false);
 	let flippedCoeff = $derived(flipped ? -1 : 1);
 	let startX = 0;
-	const THRESHOLD = 80;
+	let startY = 0;
+	const THRESHOLD_X = 200;
+	const THRESHOLD_Y = 200;
 
 	function onpointerdown(e: PointerEvent) {
 		dragging = true;
 		startX = e.clientX;
+		startY = e.clientY;
 		(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
 	}
 	function onpointermove(e: PointerEvent) {
 		if (!dragging) return;
 		dragX = e.clientX - startX;
+		dragY = e.clientY - startY;
 	}
 	function onpointerup(_e: PointerEvent) {
 		if (!dragging) return;
 		// Check threshold
-		const shouldSwipeLeft = dragX < -THRESHOLD;
-		const shouldSwipeRight = dragX > THRESHOLD;
+		const shouldSwipeLeft = dragX < -THRESHOLD_X;
+		const shouldSwipeRight = dragX > THRESHOLD_X;
+		const shouldSwipeDown = dragY > THRESHOLD_Y;
 
-		if (shouldSwipeLeft || shouldSwipeRight) {
+		if (shouldSwipeDown) {
+			dragging = false;
+			onswipedown?.();
+		} else if (shouldSwipeLeft || shouldSwipeRight) {
 			// Keep dragX for smooth handoff to triggerSwipe
 			dragging = false;
 			if (shouldSwipeLeft) {
@@ -44,6 +54,7 @@
 		} else {
 			// Below threshold - reset instantly
 			dragX = 0;
+			dragY = 0;
 			dragging = false;
 		}
 	}
@@ -51,24 +62,27 @@
 		onflip?.();
 	}
 
-	const cardBg = $derived(dragX < -40 ? '#4A1525' : dragX > 40 ? '#1A3A4A' : 'var(--color-surface)');
+	const cardBg = $derived(
+		dragY > 100 ? '#3A3A3A' :
+		dragX < -40 ? '#4A1525' : dragX > 40 ? '#1A3A4A' : 'var(--color-surface)'
+	);
 	const rotation = $derived(Math.max(-15, Math.min(15, dragX / 10)));
 
 	// Expose swipe animation function - returns promise that resolves when animation completes
 	let swipeAnimationEnd: (() => void) | null = null;
 	let animationCompletePromise: Promise<void> | null = null;
-	let resolveAnimation: (() => void) | null = null;
 
-	export function triggerSwipe(direction: 'left' | 'right'): Promise<void> {
-		const targetX = direction === 'left' ? -800 : 800;
+	export function triggerSwipe(direction: 'left' | 'right' | 'down'): Promise<void> {
+		const targetX = direction === 'left' ? -800 : direction === 'right' ? 800 : 0;
+		const targetY = direction === 'down' ? 1500 : 0;
 		const duration = 350;
 		const startTime = performance.now();
 		const startX_anim = dragX;
+		const startY_anim = dragY;
 		dragging = true;
 
 		// Create a promise that resolves when animation completes
 		animationCompletePromise = new Promise((resolve) => {
-			resolveAnimation = resolve;
 
 			function animate(currentTime: number) {
 				const elapsed = currentTime - startTime;
@@ -77,6 +91,7 @@
 				// Ease out cubic
 				const ease = 1 - Math.pow(1 - progress, 3);
 				dragX = startX_anim + (targetX - startX_anim) * ease;
+				dragY = startY_anim + (targetY - startY_anim) * ease;
 
 				if (progress < 1) {
 					swipeAnimationEnd = () => {
@@ -85,14 +100,17 @@
 					};
 					var animationId = requestAnimationFrame(animate);
 				} else {
-					// Animation complete - reset dragX before dragging so no transition occurs
+					// Animation complete - reset dragX/dragY before dragging so no transition occurs
 					swipeAnimationEnd = null;
 					dragX = 0;
+					dragY = 0;
 					dragging = false;
 					if (direction === 'left') {
 						onswipeleft?.();
-					} else {
+					} else if (direction === 'right') {
 						onswiperight?.();
+					} else {
+						onswipedown?.();
 					}
 					resolve();
 				}
@@ -125,7 +143,7 @@
 		class:dragging
 		style="background: {cardBg}; transform: rotateY({flipped ? 180 : 0}deg) rotate({dragging
 			? rotation * flippedCoeff
-			: 0}deg) translateX({dragX * flippedCoeff}px)"
+			: 0}deg) translateX({dragX * flippedCoeff}px) translateY({dragY}px)"
 	>
 		<div class="card-face card-front">
 		<button class="card-face__star" class:card-face__star--active={starred} onpointerdown={(e) => e.stopPropagation()} onclick={(e) => { e.stopPropagation(); ontogglestar?.(); }} aria-label="Toggle star">

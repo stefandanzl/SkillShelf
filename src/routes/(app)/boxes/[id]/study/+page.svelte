@@ -21,17 +21,24 @@
 	// dueCards: Array<{ card: Card; progress: CardProgress | null }>
 	const dueCards = $derived(data.dueCards ?? []);
 
+	// Mutable queue for skip functionality
+	let queue = $state<{ card: CardsRecord; progress: CardProgressRecord | null }[]>([]);
 	let currentIndex = $state(0);
 	let flipped = $state(false);
 	let showResult = $state(false);
 	let done = $state(false);
 	let submitting = $state(false);
-	let flashcardRef: { triggerSwipe: (direction: 'left' | 'right') => Promise<void> } | null = $state(null);
+	let flashcardRef: { triggerSwipe: (direction: 'left' | 'right' | 'down') => Promise<void> } | null = $state(null);
 	let showButtons = $state(true);
 	let starredOverrides = $state<Record<string, boolean>>({});
 
+	// Initialize queue from dueCards
+	$effect(() => {
+		queue = [...dueCards];
+	});
+
 	const currentEntry = $derived(
-		dueCards[currentIndex] as { card: CardsRecord; progress: CardProgressRecord | null } | undefined
+		queue[currentIndex] as { card: CardsRecord; progress: CardProgressRecord | null } | undefined
 	);
 	const currentCard = $derived(currentEntry?.card);
 	const currentProgress = $derived(currentEntry?.progress ?? null);
@@ -40,8 +47,8 @@
 			? starredOverrides[currentCard.id]
 			: (currentProgress?.starred ?? false)
 	);
-	const progressPct = $derived(dueCards.length > 0 ? (currentIndex / dueCards.length) * 100 : 0);
-	const isLast = $derived(currentIndex >= dueCards.length - 1);
+	const progressPct = $derived(queue.length > 0 ? (currentIndex / queue.length) * 100 : 0);
+	const isLast = $derived(currentIndex >= queue.length - 1);
 
 	function showAnswer() {
 		flipped = true;
@@ -88,9 +95,24 @@
 		nextCard();
 	}
 
-	function handleSkip() {
+	async function handleSkip() {
 		if (!currentCard || submitting) return;
-		nextCard();
+		submitting = true;
+
+		// Trigger downward swipe animation
+		if (flashcardRef) {
+			await flashcardRef.triggerSwipe('down');
+		}
+
+		// Move current card to the back of the queue
+		const currentEntry = queue[currentIndex];
+		queue = queue.filter((_, i) => i !== currentIndex);
+		queue.push(currentEntry);
+		// Reset flip state
+		flipped = false;
+		showResult = false;
+		submitting = false;
+		// Don't increment currentIndex since we removed the current element
 	}
 
 	function nextCard() {
@@ -186,9 +208,14 @@
 		// if (!showResult) return;
 		await handleAnswer(true, false);
 	}
+
+		async function handleSwipeDown() {
+		// if (!showResult) return;
+		await handleSkip();
+	}
 </script>
 
-{#if done || dueCards.length === 0}
+{#if done || queue.length === 0}
 	<div class="study study--done">
 		<TopBar showBack onback={() => goto(`/boxes/${boxId}`)}>
 			{#snippet center()}
@@ -211,12 +238,12 @@
 				</svg>
 			</div>
 			<h2 class="study__done-title">
-				{dueCards.length === 0 ? 'No cards due today!' : 'Session complete!'}
+				{queue.length === 0 ? 'No cards due today!' : 'Session complete!'}
 			</h2>
 			<p class="study__done-subtitle">
-				{dueCards.length === 0
+				{queue.length === 0
 					? 'All caught up.'
-					: `You reviewed ${dueCards.length} card${dueCards.length === 1 ? '' : 's'}.`}
+					: `You reviewed ${queue.length} card${queue.length === 1 ? '' : 's'}.`}
 			</p>
 			<PillButton onclick={finishSession}>Back to Box</PillButton>
 		</div>
@@ -226,7 +253,7 @@
 		<TopBar showBack onback={() => goto(`/boxes/${boxId}`)}>
 			{#snippet center()}
 				<span class="study__counter">
-					{currentIndex + 1}/{dueCards.length}
+					{currentIndex + 1}/{queue.length}
 				</span>
 			{/snippet}
 			{#snippet right()}
@@ -271,6 +298,7 @@
 						{flipped}
 						onswipeleft={handleSwipeLeft}
 						onswiperight={handleSwipeRight}
+						onswipedown={handleSwipeDown}
 						onflip={toggleFlip}
 						ontogglestar={toggleStar}
 					/>
