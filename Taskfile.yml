@@ -5,11 +5,13 @@ dotenv: [.env]
 
 env:
   PUBLIC_POCKETBASE_URL: http://localhost:8090
+  POCKETBASE_URL: http://localhost:8090
 
 tasks:
   default:
+    deps: [pb, dev]
     cmds:
-      - task: dev
+      # - task: dev
       # - task: pb
 
   dev:
@@ -19,6 +21,16 @@ tasks:
   build:
     cmds:
       - npm run build
+
+  docker:
+    deps: [build]
+    cmds:
+      - docker compose up --build
+
+  docker-build:
+    deps: [build]
+    cmds:
+      - docker compose build
 
   pb:
     dir: pocketbase

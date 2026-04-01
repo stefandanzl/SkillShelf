@@ -2,7 +2,8 @@ import type { TypedPocketBase } from '$lib/pocketbase-types';
 import type { Handle } from '@sveltejs/kit';
 
 import { dev } from '$app/environment';
-import { env } from '$env/dynamic/public';
+// import { env } from '$env/dynamic/public';
+import { env } from '$env/dynamic/private';
 import { Security } from '$lib/pocketbase.svelte';
 import PocketBase from 'pocketbase';
 
@@ -10,7 +11,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 	if (dev && event.url.pathname === '/.well-known/appspecific/com.chrome.devtools.json') {
 		return new Response(undefined, { status: 404 });
 	}
-	event.locals.pb = new PocketBase(env.PUBLIC_POCKETBASE_URL) as TypedPocketBase;
+	event.locals.pb = new PocketBase(env.POCKETBASE_URL) as TypedPocketBase;
 	event.locals.pb.authStore.loadFromCookie(event.request.headers.get('cookie') || '');
 
 	// dev && console.log('hooks.server: ', locals.pb.authStore.model);

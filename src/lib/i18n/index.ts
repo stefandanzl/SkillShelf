@@ -1,9 +1,15 @@
 import { browser } from '$app/environment';
-import { init, register, getLocaleFromNavigator, locale } from 'svelte-i18n';
+import { init, register, addMessages, getLocaleFromNavigator, locale } from 'svelte-i18n';
 import { pb } from '$lib/pocketbase.svelte';
 import type { UsersRecord } from '$lib/pocketbase-types';
 
-register('en', () => import('./locales/en.json'));
+// Import fallback locale synchronously for SSR
+import enMessages from './locales/en.json';
+
+// Add fallback messages directly for SSR (synchronous)
+addMessages('en', enMessages);
+
+// Register other locales lazily (client-side only)
 register('de', () => import('./locales/de.json'));
 
 const FALLBACK_LANG = 'en';

@@ -1,0 +1,17 @@
+node_modules
+.svelte-kit/dev
+.svelte-kit/output
+.pocketbase
+dist
+.DS_Store
+.env
+.env.*
+!.env.example
+*.log
+coverage
+.nyc_output
+.vscode
+.idea
+*.tgz
+.git
+.gitignore

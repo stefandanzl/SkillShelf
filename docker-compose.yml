@@ -1,0 +1,33 @@
+services:
+  pocketbase:
+    image: adrianmusante/pocketbase
+    container_name: skillshelf-pocketbase
+    restart: unless-stopped
+    ports:
+      - '8090:8090'
+    volumes:
+      - ./pocketbase/pb_data:/pocketbase/data
+      - ./pocketbase/pb_migrations:/pocketbase/migrations
+      - ./pocketbase/public:/pocketbase/public
+      - ./pocketbase/hooks:/pocketbase/hooks
+    healthcheck:
+      test: ['CMD', 'wget', '-q', '--spider', 'http://localhost:8090/api/health']
+      interval: 10s
+      timeout: 5s
+      retries: 3
+
+  frontend:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: skillshelf-frontend
+    restart: unless-stopped
+    ports:
+      - '3000:3000'
+    environment:
+      - POCKETBASE_URL=http://pocketbase:8090 # keep like that
+      - ORIGIN=${ORIGIN} # Frontend public address
+      - PUBLIC_POCKETBASE_URL=${PUBLIC_POCKETBASE_URL} # Pocketbase public address
+    depends_on:
+      pocketbase:
+        condition: service_healthy

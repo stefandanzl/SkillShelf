@@ -56,7 +56,7 @@
 	<p>If you can't find the verification email, please check your spam folder.</p>
 
 	<section>
-		<button aria-busy={isLoading} onclick={() => handleForm()} type="submit"> Resend Verification Email </button>
+		<button aria-busy={isLoading} onclick={() => handleForm()} type="button"> Resend Verification Email </button>
 	</section>
 
 	<Debug>

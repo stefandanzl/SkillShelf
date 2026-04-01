@@ -1,6 +1,7 @@
-import { pbError } from "$lib/pocketbase.svelte";
+import { waitLocale } from 'svelte-i18n';
 
-export const load = async ({ locals, url }) => {
-  const results = { user: locals.user ?? null };
-  return results;
+export const load = async ({ locals }) => {
+	// await waitLocale();
+	const results = { user: locals.user ?? null };
+	return results;
 };
