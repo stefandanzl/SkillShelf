@@ -13,6 +13,7 @@
   import { pb } from '$lib/pocketbase.svelte';
   import { deleteBox } from '$lib/api';
   import { BOX_COLOR_MAP } from '$lib/leitner';
+  import { setStudyCards } from '$lib/study-store.svelte';
 	import type { CardsRecord } from '$lib/pocketbase-types.js';
 
   let { data } = $props();
@@ -142,6 +143,12 @@
       <PillButton
         variant={dueCount === 0 ? 'disabled' : 'primary'}
         onclick={() => {
+          // Pass filtered cards to study page to avoid refetch
+          const studyCards = filteredCards.map((c: CardsRecord) => ({
+            card: c,
+            progress: progressMap[c.id] ?? null
+          }));
+          setStudyCards(studyCards);
           const levelsParam = selectedLevels.length > 0
             ? `?levels=${selectedLevels.join(',')}`
             : '';

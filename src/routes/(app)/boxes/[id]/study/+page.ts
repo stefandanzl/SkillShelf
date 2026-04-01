@@ -1,12 +1,19 @@
 import { browser } from '$app/environment';
 import { pb } from '$lib/pocketbase.svelte';
 import { getCards, getProgressForBox } from '$lib/api';
+import { consumeStudyCards } from '$lib/study-store.svelte';
 import { error } from '@sveltejs/kit';
 import type { PageLoad } from './$types';
 
 export const load: PageLoad = async ({ params, url }) => {
 	if (!browser) {
 		return { dueCards: [], boxId: params.id };
+	}
+
+	// Use prefetched cards from box detail if available
+	const prefetched = consumeStudyCards();
+	if (prefetched) {
+		return { dueCards: prefetched, boxId: params.id };
 	}
 
 	try {
