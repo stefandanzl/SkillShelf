@@ -18,6 +18,10 @@ const config = {
 		paths: {
 			base: ''
 		},
+		csrf: {
+			checkOrigin: false,
+			trustedOrigins: ['https://skillshelf.danzl.it']
+		},
 		alias: {
 			$utils: 'src/utils',
 			$routes: 'src/routes'
