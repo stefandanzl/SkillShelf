@@ -1,0 +1,17 @@
+# docker-compose.dev.yml
+services:
+  app:
+    build:
+      context: .
+      target: deps
+    command: npm run dev -- --host 0.0.0.0
+    ports:
+      - '5173:5173' # Vite dev server port
+    volumes:
+      - ./src:/app/src
+      - ./static:/app/static
+      - ./svelte.config.js:/app/svelte.config.js
+      - ./vite.config.ts:/app/vite.config.ts
+      - /app/node_modules
+    environment:
+      - DATABASE_URL=postgresql://postgres:devpass@db:5432/sveltekit_dev

@@ -4,8 +4,8 @@ version: '3'
 dotenv: [.env]
 
 env:
-  PUBLIC_POCKETBASE_URL: http://localhost:8090
-  POCKETBASE_URL: http://localhost:8090
+#  PUBLIC_POCKETBASE_URL: http://localhost:8090
+#  POCKETBASE_URL: http://localhost:8090
 
 tasks:
   default:
@@ -23,12 +23,15 @@ tasks:
       - npm run build
 
   docker:
-    deps: [build]
+    # deps: [build]
     cmds:
       - docker compose up --build
 
+  docker-dev:
+    cmd: docker compose -f docker-compose.dev.yml up
+
   docker-build:
-    deps: [build]
+    # deps: [build]
     cmds:
       - docker compose build
 
