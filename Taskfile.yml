@@ -34,7 +34,7 @@ tasks:
 
   pb:
     dir: pocketbase
-    cmd: ./pocketbase.exe serve
+    cmd: ./pocketbase serve
 
   types:
     cmd: npx pocketbase-typegen --db ./pocketbase/pb_data/data.db --out ./src/lib/pocketbase-types.ts
