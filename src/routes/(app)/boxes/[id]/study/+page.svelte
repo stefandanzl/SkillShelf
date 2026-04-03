@@ -24,14 +24,17 @@
 	// User settings
 	interface UserSettings {
 		showStudyButtons?: boolean;
+		enableMarkdown?: boolean;
 		language?: string;
 	}
 
 	// Load settings from user
 	let showButtons = $state(true);
+	let enableMarkdown = $state(true);
 	$effect(() => {
 		if (user?.settings) {
 			showButtons = user.settings.showStudyButtons ?? true;
+			enableMarkdown = user.settings.enableMarkdown ?? true;
 		}
 	});
 
@@ -326,6 +329,7 @@
 						starred={currentStarred}
 						{flipped}
 						{isLast}
+						{enableMarkdown}
 						onswipeleft={handleSwipeLeft}
 						onswiperight={handleSwipeRight}
 						onswipedown={handleSwipeDown}

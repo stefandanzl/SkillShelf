@@ -7,10 +7,39 @@
   import SegmentedControl from '$lib/components/ui/SegmentedControl.svelte';
   import Toggle from '$lib/components/ui/Toggle.svelte';
   import { locale, setLocale } from '$lib/i18n';
+  import { pb } from '$lib/pocketbase.svelte';
+
+  interface UserSettings {
+    enableMarkdown?: boolean;
+    showStudyButtons?: boolean;
+    language?: string;
+  }
 
   let theme = $state('auto');
   let reminderEnabled = $state(false);
   let cloudSyncEnabled = $state(true);
+  let enableMarkdown = $state(true);
+
+  // Load settings from user on mount
+  const user = $derived(pb.authStore.model as any);
+  $effect(() => {
+    if (user?.settings) {
+      enableMarkdown = user.settings.enableMarkdown ?? true;
+    }
+  });
+
+  // Save settings to user
+  async function saveSetting<K extends keyof UserSettings>(key: K, value: UserSettings[K]) {
+    if (!user) return;
+    const currentSettings = (user.settings || {}) as UserSettings;
+    const updatedSettings = { ...currentSettings, [key]: value };
+    await pb.collection('users').update(user.id, { settings: updatedSettings });
+  }
+
+  async function toggleMarkdown() {
+    enableMarkdown = !enableMarkdown;
+    await saveSetting('enableMarkdown', enableMarkdown);
+  }
 
   const themeSegments = $derived([
     { value: 'auto', label: $t('settings.theme_auto') },
@@ -80,6 +109,25 @@
         {#snippet right()}
           <span class="settings__lang-label">{languageLabel}</span>
           <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polyline points="9 18 15 12 9 6"/></svg>
+        {/snippet}
+      </SettingsRow>
+    </section>
+
+    <!-- Study Settings -->
+    <div class="settings__section-label">Study</div>
+    <section class="settings__section">
+      <SettingsRow label="Markdown in cards">
+        {#snippet icon()}
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M14.5 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V7.5L14.5 2z"/>
+            <polyline points="14 2 14 8 20 8"/>
+            <line x1="16" y1="13" x2="8" y2="13"/>
+            <line x1="16" y1="17" x2="8" y2="17"/>
+            <line x1="10" y1="9" x2="8" y2="9"/>
+          </svg>
+        {/snippet}
+        {#snippet right()}
+          <Toggle checked={enableMarkdown} onchange={toggleMarkdown} />
         {/snippet}
       </SettingsRow>
     </section>

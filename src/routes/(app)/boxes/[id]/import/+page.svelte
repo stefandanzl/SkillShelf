@@ -41,6 +41,51 @@
   // ── Delimiter detection ─────────────────────────────────────────────────────
   const HEADER_KEYWORDS = ['front', 'back', 'question', 'answer', 'frage', 'antwort', 'vorderseite', 'rückseite'];
 
+  // Proper CSV parser that handles quoted fields and escaped quotes
+  function parseCSVLine(line: string, delimiter: string): string[] {
+    const result: string[] = [];
+    let current = '';
+    let inQuotes = false;
+    let i = 0;
+
+    while (i < line.length) {
+      const char = line[i];
+      const nextChar = line[i + 1];
+
+      if (inQuotes) {
+        if (char === '"' && nextChar === '"') {
+          // Escaped quote ("")
+          current += '"';
+          i += 2;
+        } else if (char === '"') {
+          // End of quoted field
+          inQuotes = false;
+          i++;
+        } else {
+          current += char;
+          i++;
+        }
+      } else {
+        if (char === '"') {
+          // Start of quoted field
+          inQuotes = true;
+          i++;
+        } else if (char === delimiter) {
+          // Delimiter - end of current field
+          result.push(current);
+          current = '';
+          i++;
+        } else {
+          current += char;
+          i++;
+        }
+      }
+    }
+
+    result.push(current);
+    return result;
+  }
+
   function detectDelimiter(text: string): string {
     const firstLines = text.split('\n').slice(0, 5).filter(l => l.trim());
     if (firstLines.length === 0) return ';';
@@ -56,7 +101,7 @@
     let bestScore = -1;
 
     for (const d of delimiters) {
-      const counts = firstLines.map(l => l.split(d.char).length);
+      const counts = firstLines.map(l => parseCSVLine(l, d.char).length);
       const allTwo = counts.every(c => c >= 2);
       if (!allTwo) continue;
 
@@ -80,7 +125,7 @@
     const delimiter = detectDelimiter(text);
     const firstLine = text.split('\n').find(l => l.trim());
     if (!firstLine) return;
-    const parts = firstLine.split(delimiter);
+    const parts = parseCSVLine(firstLine, delimiter);
     firstRowIsHeader = detectHeader(parts);
   }
 
@@ -96,17 +141,41 @@
 
   const allRows = $derived.by(() => {
     if (!fileContent) return [];
-    return fileContent
-      .split('\n')
-      .map(line => line.replace(/\r$/, ''))
-      .filter(line => line.trim().length > 0)
-      .map(line => {
-        const parts = line.split(activeDelimiter);
-        return {
-          front: (parts[0] ?? '').trim(),
-          back: (parts.slice(1).join(activeDelimiter) ?? '').trim()
-        };
-      });
+
+    const lines = fileContent.split('\n').map(line => line.replace(/\r$/, ''));
+    const rows: { front: string; back: string }[] = [];
+    let accumulated = '';
+    let insideQuote = false;
+
+    for (const line of lines) {
+      let charIndex = 0;
+      while (charIndex < line.length) {
+        const char = line[charIndex];
+        if (char === '"') {
+          insideQuote = !insideQuote;
+        }
+        charIndex++;
+      }
+
+      accumulated += (accumulated ? '\n' : '') + line;
+
+      // If we're outside quotes at the end of line, we have a complete row
+      if (!insideQuote) {
+        const trimmed = accumulated.trim();
+        if (trimmed) {
+          const parts = parseCSVLine(trimmed, activeDelimiter);
+          if (parts.length >= 2) {
+            rows.push({
+              front: (parts[0] ?? '').trim(),
+              back: (parts.slice(1).join(activeDelimiter) ?? '').trim()
+            });
+          }
+        }
+        accumulated = '';
+      }
+    }
+
+    return rows;
   });
 
   // Auto-detect header is done inside processFile after content is loaded

@@ -37,6 +37,7 @@
     "vite": "^6.0.0"
   },
   "dependencies": {
+    "marked": "^17.0.5",
     "svelte-i18n": "^4.0.1"
   }
 }
