@@ -344,6 +344,7 @@
 	.card-face__content {
 		flex: 1;
 		display: flex;
+		flex-direction: column;
 		align-items: center;
 		justify-content: center;
 		font-size: var(--font-size-md);
@@ -401,6 +402,7 @@
 	.card-face__content :global(h6) {
 		font-weight: 700;
 		margin: 0.5em 0;
+		text-align: center;
 	}
 	.card-face__content :global(a) {
 		color: var(--color-primary);
@@ -408,6 +410,14 @@
 	}
 	.card-face__content :global(a:hover) {
 		opacity: 0.8;
+	}
+	.card-face__content :global(img) {
+		max-width: 100%;
+		/* max-height: 50%; */
+		object-fit: contain;
+		display: block;
+		/* margin: var(--space-xs) auto; */
+		pointer-events: none;
 	}
 	.card-face__footer {
 		display: flex;
