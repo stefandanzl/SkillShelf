@@ -21,7 +21,7 @@
   let enableMarkdown = $state(true);
 
   // Load settings from user on mount
-  const user = $derived(pb.authStore.model as any);
+  const user = $derived(pb.authStore.record as any);
   $effect(() => {
     if (user?.settings) {
       enableMarkdown = user.settings.enableMarkdown ?? true;
@@ -34,6 +34,10 @@
     const currentSettings = (user.settings || {}) as UserSettings;
     const updatedSettings = { ...currentSettings, [key]: value };
     await pb.collection('users').update(user.id, { settings: updatedSettings });
+    // Update auth store record directly so changes are reflected immediately
+    if (pb.authStore.record) {
+      (pb.authStore.record as any).settings = { ...(pb.authStore.record as any).settings, ...updatedSettings };
+    }
   }
 
   async function toggleMarkdown() {

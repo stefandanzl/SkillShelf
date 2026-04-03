@@ -25,7 +25,7 @@
 	interface UserSettings {
 		enableMarkdown?: boolean;
 	}
-	const user = $derived(pb.authStore.model as any);
+	const user = $derived(pb.authStore.record as any);
 	const enableMarkdown = $derived((user?.settings as UserSettings)?.enableMarkdown ?? true);
 
 	// Configure marked

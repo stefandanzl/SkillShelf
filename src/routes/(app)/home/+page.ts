@@ -11,9 +11,6 @@ export const load: PageLoad = async () => {
 		return { boxSummaries: [] };
 	}
 
-	// Reload cookie to get latest auth state (fixes race after login)
-	pb.authStore.loadFromCookie(document.cookie);
-
 	if (!pb.authStore.isValid) {
 		return { boxSummaries: [] };
 	}
