@@ -25,8 +25,10 @@ services:
     ports:
       - '3000:3000'
     environment:
-      - POCKETBASE_URL=http://pocketbase:8090 # keep like that
-      - PUBLIC_POCKETBASE_URL=${PUBLIC_POCKETBASE_URL} # Pocketbase public address
+      # Copy env.example to .env and modify to your needs
+      - POCKETBASE_URL=http://pocketbase:8090
+      - PUBLIC_POCKETBASE_URL=${PUBLIC_POCKETBASE_URL}
+      - ORIGIN=${ORIGIN}
     depends_on:
       pocketbase:
         condition: service_healthy
