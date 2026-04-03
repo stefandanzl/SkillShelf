@@ -35,6 +35,16 @@ tasks:
     cmds:
       - docker compose build
 
+  docker-deploy:
+    cmds:
+      - git stash -u -m "task docker-deploy"
+      - git pull
+      - task: docker
+
+  deploy:
+    cmds:
+      - task skillshelf -g
+
   pb:
     dir: pocketbase
     cmd: ./pocketbase serve
@@ -49,7 +59,9 @@ tasks:
 
   pb-download:
     dir: pocketbase
-    cmd: wget https://cdn.danzl.it/apps/pocketbase.exe
+    cmds:
+      - cmd: wget https://cdn.danzl.it/apps/pocketbase.exe
+        platforms: [windows]
 
   install:
     deps: [npm-install, pb-download]

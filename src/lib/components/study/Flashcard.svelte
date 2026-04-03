@@ -27,14 +27,17 @@
 	let dragX = $state(0);
 	let dragY = $state(0);
 	let dragging = $state(false);
+	let didDrag = $state(false);
 	let flippedCoeff = $derived(flipped ? -1 : 1);
 	let startX = 0;
 	let startY = 0;
 	const THRESHOLD_X = 200;
 	const THRESHOLD_Y = 200;
+	const DRAG_TAP_THRESHOLD = 5;
 
 	function onpointerdown(e: PointerEvent) {
 		dragging = true;
+		didDrag = false;
 		startX = e.clientX;
 		startY = e.clientY;
 		(e.currentTarget as HTMLElement).setPointerCapture(e.pointerId);
@@ -43,6 +46,9 @@
 		if (!dragging) return;
 		dragX = e.clientX - startX;
 		dragY = e.clientY - startY;
+		if (Math.abs(dragX) > DRAG_TAP_THRESHOLD || Math.abs(dragY) > DRAG_TAP_THRESHOLD) {
+			didDrag = true;
+		}
 	}
 	function onpointerup(_e: PointerEvent) {
 		if (!dragging) return;
@@ -69,8 +75,10 @@
 			dragging = false;
 		}
 	}
-	function ondblclick(e: MouseEvent) {
-		onflip?.();
+	function onclick() {
+		if (!didDrag) {
+			onflip?.();
+		}
 	}
 
 	const cardBg = $derived(
@@ -141,7 +149,7 @@
 	{onpointerdown}
 	{onpointermove}
 	{onpointerup}
-	{ondblclick}
+	{onclick}
 	role="button"
 	tabindex="0"
 	aria-label="Flashcard"
