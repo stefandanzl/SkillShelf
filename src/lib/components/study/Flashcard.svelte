@@ -11,7 +11,18 @@
 		onflip?: () => void;
 		ontogglestar?: () => void;
 	}
-	let { front, back, level = 1, flipped = false, starred = false, onswipeleft, onswiperight, onswipedown, onflip, ontogglestar }: Props = $props();
+	let {
+		front,
+		back,
+		level = 1,
+		flipped = false,
+		starred = false,
+		onswipeleft,
+		onswiperight,
+		onswipedown,
+		onflip,
+		ontogglestar
+	}: Props = $props();
 
 	let dragX = $state(0);
 	let dragY = $state(0);
@@ -63,8 +74,7 @@
 	}
 
 	const cardBg = $derived(
-		dragY > 100 ? '#3A3A3A' :
-		dragX < -40 ? '#4A1525' : dragX > 40 ? '#1A3A4A' : 'var(--color-surface)'
+		dragY > 100 ? '#3A3A3A' : dragX < -40 ? '#4A1525' : dragX > 40 ? '#1A3A4A' : 'var(--color-surface)'
 	);
 	const rotation = $derived(Math.max(-15, Math.min(15, dragX / 10)));
 
@@ -83,7 +93,6 @@
 
 		// Create a promise that resolves when animation completes
 		animationCompletePromise = new Promise((resolve) => {
-
 			function animate(currentTime: number) {
 				const elapsed = currentTime - startTime;
 				const progress = Math.min(elapsed / duration, 1);
@@ -146,9 +155,29 @@
 			: 0}deg) translateX({dragX * flippedCoeff}px) translateY({dragY}px)"
 	>
 		<div class="card-face card-front">
-		<button class="card-face__star" class:card-face__star--active={starred} onpointerdown={(e) => e.stopPropagation()} onclick={(e) => { e.stopPropagation(); ontogglestar?.(); }} aria-label="Toggle star">
-				<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-					<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+			<button
+				class="card-face__star"
+				class:card-face__star--active={starred}
+				onpointerdown={(e) => e.stopPropagation()}
+				onclick={(e) => {
+					e.stopPropagation();
+					ontogglestar?.();
+				}}
+				aria-label="Toggle star"
+			>
+				<svg
+					width="18"
+					height="18"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+				>
+					<polygon
+						points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
+					></polygon>
 				</svg>
 			</button>
 			<div class="card-face__content">{front}</div>
@@ -172,9 +201,29 @@
 			</div>
 		</div>
 		<div class="card-face card-back">
-		<button class="card-face__star" class:card-face__star--active={starred} onpointerdown={(e) => e.stopPropagation()} onclick={(e) => {  e.stopPropagation(); ontogglestar?.(); }} aria-label="Toggle star">
-				<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-					<polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/>
+			<button
+				class="card-face__star"
+				class:card-face__star--active={starred}
+				onpointerdown={(e) => e.stopPropagation()}
+				onclick={(e) => {
+					e.stopPropagation();
+					ontogglestar?.();
+				}}
+				aria-label="Toggle star"
+			>
+				<svg
+					width="18"
+					height="18"
+					viewBox="0 0 24 24"
+					fill="none"
+					stroke="currentColor"
+					stroke-width="2"
+					stroke-linecap="round"
+					stroke-linejoin="round"
+				>
+					<polygon
+						points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
+					></polygon>
 				</svg>
 			</button>
 			<div class="card-face__content">{back}</div>
@@ -207,7 +256,9 @@
 		margin: 0 var(--space-md);
 		cursor: grab;
 		user-select: none;
-		touch-action: pan-y;
+		/* touch-action: pan-x pan-y pinch-zoom; */
+		touch-action: none;
+		overscroll-behavior: none;
 		min-height: 300px;
 		animation: slideUp 0.2s ease-out;
 	}

@@ -399,10 +399,10 @@
 	.study {
 		display: flex;
 		flex-direction: column;
-		height: 100%;
-		/* height: 100vh; */
-		/* height: 100dvh; */
+		height: 100dvh;
 		overflow: hidden;
+		overscroll-behavior-y: none;
+		touch-action: pan-x pan-y pinch-zoom;
 	}
 
 	.study--done {

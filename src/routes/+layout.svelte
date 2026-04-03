@@ -25,6 +25,7 @@
     currentPath.startsWith('/profile') ||
     currentPath.startsWith('/settings')
   );
+  const isStudyMode = $derived(currentPath.includes('/study'));
 
   let isReady = $state(!browser);
 
@@ -45,7 +46,7 @@
 
 {#if isReady}
   {#if isAppRoute}
-    <div class="app-shell">
+    <div class="app-shell" class:app-shell--study={isStudyMode}>
       <!-- Desktop sidebar -->
       <nav class="sidebar-nav">
         <div class="sidebar-nav__logo">
@@ -156,6 +157,15 @@
   .bottom-nav__label {
     font-size: var(--font-size-xs);
     font-weight: 500;
+  }
+
+  /* Hide bottom nav in study mode on mobile */
+  .app-shell--study .bottom-nav {
+    display: none;
+  }
+  /* Adjust page content for study mode - no bottom nav padding needed */
+  .app-shell--study .page-content {
+    padding-bottom: 0;
   }
 
   /* Desktop Sidebar */

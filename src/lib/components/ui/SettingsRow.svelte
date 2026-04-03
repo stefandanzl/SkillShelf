@@ -41,8 +41,8 @@
   .settings-row {
     background: var(--color-surface);
     border-radius: var(--radius-md);
-    padding: var(--space-md);
-    min-height: 56px;
+    padding: var(--space-sm) var(--space-md);
+    min-height: 44px;
     display: flex;
     align-items: center;
     gap: var(--space-md);
