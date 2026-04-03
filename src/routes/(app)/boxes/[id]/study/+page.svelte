@@ -106,38 +106,45 @@
 		if (!currentCard || submitting) return;
 		submitting = true;
 
-		// Trigger swipe animation if not skipping (for hotkey/button presses)
+		// Start swipe animation and API request in parallel for faster feel
+		let animationPromise: Promise<void> | null = null;
 		if (!skipAnimation && flashcardRef) {
 			const direction = wasCorrect ? 'right' : 'left';
-			await flashcardRef.triggerSwipe(direction);
-			// Animation and callback are complete, now submit and move to next
+			animationPromise = flashcardRef.triggerSwipe(direction);
 		}
 
+		// Submit answer immediately (don't wait for animation)
 		try {
 			const starOverride = currentCard.id in starredOverrides ? starredOverrides[currentCard.id] : undefined;
-				await submitAnswer(pb as any, currentCard, currentProgress, wasCorrect, starOverride);
+			await submitAnswer(pb as any, currentCard, currentProgress, wasCorrect, starOverride);
 		} catch (e) {
 			console.error('Failed to submit answer', e);
-		} finally {
-			submitting = false;
 		}
+
+		// Wait for animation to complete before showing next card
+		if (animationPromise) {
+			await animationPromise;
+		}
+
+		submitting = false;
 		nextCard();
 	}
 
 	async function handleSkip() {
-		if (!currentCard || submitting) return;
+		if (!currentCard || submitting || isLast) return;
 		submitting = true;
 
-		// Trigger downward swipe animation
-		if (flashcardRef) {
-			await flashcardRef.triggerSwipe('down');
-		}
+		// Start swipe animation
+		const animationPromise = flashcardRef?.triggerSwipe('down') ?? Promise.resolve();
 
-		// Move current card to the back of the queue
+		// Move current card to the back of the queue immediately
 		const currentEntry = queue[currentIndex];
 		queue = queue.filter((_, i) => i !== currentIndex);
 		queue.push(currentEntry);
-		// Reset flip state
+
+		// Wait for animation to complete before resetting state
+		await animationPromise;
+
 		flipped = false;
 		showResult = false;
 		submitting = false;
@@ -203,7 +210,7 @@
 						handleSkip();
 					}
 				},
-				() => !done
+				() => !done && !isLast
 			),
 
 			// Next card (N)
@@ -238,7 +245,7 @@
 		await handleAnswer(true, false);
 	}
 
-		async function handleSwipeDown() {
+	async function handleSwipeDown() {
 		// if (!showResult) return;
 		await handleSkip();
 	}
@@ -270,9 +277,7 @@
 				{queue.length === 0 ? 'No cards due today!' : 'Session complete!'}
 			</h2>
 			<p class="study__done-subtitle">
-				{queue.length === 0
-					? 'All caught up.'
-					: `You reviewed ${queue.length} card${queue.length === 1 ? '' : 's'}.`}
+				{queue.length === 0 ? 'All caught up.' : `You reviewed ${queue.length} card${queue.length === 1 ? '' : 's'}.`}
 			</p>
 			<PillButton onclick={finishSession}>Back to Box</PillButton>
 		</div>
@@ -286,10 +291,7 @@
 				</span>
 			{/snippet}
 			{#snippet right()}
-				<IconButton
-					title="Card grid"
-					onclick={toggleShowButtons}
-				>
+				<IconButton title="Card grid" onclick={toggleShowButtons}>
 					<svg
 						width="20"
 						height="20"
@@ -323,6 +325,7 @@
 						level={currentProgress?.level ?? 1}
 						starred={currentStarred}
 						{flipped}
+						{isLast}
 						onswipeleft={handleSwipeLeft}
 						onswiperight={handleSwipeRight}
 						onswipedown={handleSwipeDown}
@@ -372,11 +375,12 @@
 					<PillButton
 						variant="secondary"
 						onclick={() => {
+							console.log(queue.length);
 							handleSkip();
 						}}
 						fullWidth={false}
 						width="calc(33.33% - 8px)"
-						disabled={submitting}
+						disabled={submitting || isLast}
 					>
 						<svg
 							width="20"

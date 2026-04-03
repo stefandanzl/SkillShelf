@@ -5,6 +5,7 @@
 		level?: number;
 		flipped?: boolean;
 		starred?: boolean;
+		isLast?: boolean;
 		onswipeleft?: () => void;
 		onswiperight?: () => void;
 		onswipedown?: () => void;
@@ -17,6 +18,7 @@
 		level = 1,
 		flipped = false,
 		starred = false,
+		isLast,
 		onswipeleft,
 		onswiperight,
 		onswipedown,
@@ -69,7 +71,7 @@
 		const shouldSwipeRight = dragX > THRESHOLD_X;
 		const shouldSwipeDown = dragY > THRESHOLD_Y;
 
-		if (shouldSwipeDown) {
+		if (shouldSwipeDown && !isLast) {
 			dragging = false;
 			onswipedown?.();
 		} else if (shouldSwipeLeft || shouldSwipeRight) {

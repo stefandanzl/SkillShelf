@@ -236,7 +236,7 @@
       flex: 1;
       max-width: var(--content-max-width);
       margin: 0 auto;
-      padding: var(--space-xl) var(--space-md) var(--space-md);
+      /* padding: var(--space-xl) var(--space-md) var(--space-md); */
     }
   }
 
