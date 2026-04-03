@@ -25,7 +25,7 @@ tasks:
   docker:
     # deps: [build]
     cmds:
-      - docker compose up --build
+      - docker compose up --build -d
 
   docker-dev:
     cmd: docker compose -f docker-compose.dev.yml up
