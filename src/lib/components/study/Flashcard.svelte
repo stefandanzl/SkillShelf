@@ -31,9 +31,21 @@
 	let flippedCoeff = $derived(flipped ? -1 : 1);
 	let startX = 0;
 	let startY = 0;
-	const THRESHOLD_X = 200;
-	const THRESHOLD_Y = 200;
+	let viewportWidth = $state(typeof window !== 'undefined' ? window.innerWidth : 400);
+	let viewportHeight = $state(typeof window !== 'undefined' ? window.innerHeight : 800);
+
+	// Responsive swipe thresholds - lower on smaller screens
+	const THRESHOLD_X = $derived(Math.min(150, viewportWidth * 0.25));
+	const THRESHOLD_Y = $derived(Math.min(150, viewportHeight * 0.2));
 	const DRAG_TAP_THRESHOLD = 5;
+
+	// Update viewport on resize
+	if (typeof window !== 'undefined') {
+		window.addEventListener('resize', () => {
+			viewportWidth = window.innerWidth;
+			viewportHeight = window.innerHeight;
+		});
+	}
 
 	function onpointerdown(e: PointerEvent) {
 		dragging = true;
@@ -117,10 +129,8 @@
 					};
 					var animationId = requestAnimationFrame(animate);
 				} else {
-					// Animation complete - reset dragX/dragY before dragging so no transition occurs
+					// Animation complete - don't reset position, card will be unmounted
 					swipeAnimationEnd = null;
-					dragX = 0;
-					dragY = 0;
 					dragging = false;
 					if (direction === 'left') {
 						onswipeleft?.();
@@ -268,12 +278,12 @@
 		touch-action: none;
 		overscroll-behavior: none;
 		min-height: 300px;
-		animation: slideUp 0.2s ease-out;
+		animation: slideUp 0.15s ease-out;
 	}
 	@keyframes slideUp {
 		from {
-			opacity: 0;
-			transform: translateY(60px);
+			opacity: 0.5;
+			transform: translateY(40px);
 		}
 		to {
 			opacity: 1;

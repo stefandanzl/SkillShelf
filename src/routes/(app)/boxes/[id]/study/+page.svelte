@@ -18,6 +18,36 @@
 
 	const boxId = $derived($page.params.id);
 
+	// Get user from pb auth store
+	const user = $derived(pb.authStore.model as any);
+
+	// User settings
+	interface UserSettings {
+		showStudyButtons?: boolean;
+		language?: string;
+	}
+
+	// Load settings from user
+	let showButtons = $state(true);
+	$effect(() => {
+		if (user?.settings) {
+			showButtons = user.settings.showStudyButtons ?? true;
+		}
+	});
+
+	// Save settings to user
+	async function saveSetting<K extends keyof UserSettings>(key: K, value: UserSettings[K]) {
+		if (!user) return;
+		const currentSettings = (user.settings || {}) as UserSettings;
+		const updatedSettings = { ...currentSettings, [key]: value };
+		await pb.collection('users').update(user.id, { settings: updatedSettings });
+	}
+
+	async function toggleShowButtons() {
+		showButtons = !showButtons;
+		await saveSetting('showStudyButtons', showButtons);
+	}
+
 	// dueCards: Array<{ card: Card; progress: CardProgress | null }>
 	const dueCards = $derived(data.dueCards ?? []);
 
@@ -29,7 +59,6 @@
 	let done = $state(false);
 	let submitting = $state(false);
 	let flashcardRef: { triggerSwipe: (direction: 'left' | 'right' | 'down') => Promise<void> } | null = $state(null);
-	let showButtons = $state(true);
 	let starredOverrides = $state<Record<string, boolean>>({});
 
 	// Initialize queue from dueCards
@@ -259,9 +288,7 @@
 			{#snippet right()}
 				<IconButton
 					title="Card grid"
-					onclick={() => {
-						showButtons = !showButtons;
-					}}
+					onclick={toggleShowButtons}
 				>
 					<svg
 						width="20"
