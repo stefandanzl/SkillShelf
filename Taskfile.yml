@@ -37,11 +37,13 @@ tasks:
 
   docker-deploy:
     cmds:
-      - git stash -u -m "task docker-deploy"
+      - cmd: git stash -u -m "task docker-deploy"
+        ignore_error: true
       - git pull
       - task: docker
 
   deploy:
+    desc: Run deployment from global Taskfile
     cmds:
       - task skillshelf -g
 
