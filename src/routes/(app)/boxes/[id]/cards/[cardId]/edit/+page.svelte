@@ -6,6 +6,7 @@
 	import PillButton from '$lib/components/ui/PillButton.svelte';
 	import { pb } from '$lib/pocketbase.svelte';
 	import { updateCard, deleteCard } from '$lib/api';
+	import { marked } from 'marked';
 
 	let { data } = $props();
 
@@ -19,6 +20,22 @@
 	$effect(() => {
 		starred = data.progress?.starred ?? false;
 	});
+
+	// Load user markdown setting
+	interface UserSettings {
+		enableMarkdown?: boolean;
+	}
+	const user = $derived(pb.authStore.model as any);
+	const enableMarkdown = $derived((user?.settings as UserSettings)?.enableMarkdown ?? true);
+
+	// Configure marked
+	marked.use({
+		gfm: true,
+		breaks: true
+	});
+
+	const renderedFront = $derived(enableMarkdown ? marked(front) : front);
+	const renderedBack = $derived(enableMarkdown ? marked(back) : back);
 
 	const canSave = $derived(front.trim().length > 0 && back.trim().length > 0);
 	let showDeleteConfirm = $state(false);
@@ -124,7 +141,14 @@
 				placeholder={$t('card.front_placeholder')}
 				bind:value={front}
 				rows={5}
-			></textarea>
+			>
+			</textarea>
+			{#if enableMarkdown}
+				<div class="card-edit__preview">
+					<div class="card-edit__preview-label">Preview</div>
+					<div class="card-edit__preview-content">{@html renderedFront}</div>
+				</div>
+			{/if}
 		</div>
 
 		<div class="card-edit__divider">
@@ -152,7 +176,14 @@
 				placeholder={$t('card.back_placeholder')}
 				bind:value={back}
 				rows={5}
-			></textarea>
+			>
+			</textarea>
+			{#if enableMarkdown}
+				<div class="card-edit__preview">
+					<div class="card-edit__preview-label">Preview</div>
+					<div class="card-edit__preview-content">{@html renderedBack}</div>
+				</div>
+			{/if}
 		</div>
 
 		{#if saveError}<p class="card-edit__error">{saveError}</p>{/if}
@@ -243,6 +274,93 @@
 	.card-edit__textarea:focus {
 		border-color: var(--color-primary);
 		outline: none;
+	}
+	.card-edit__preview {
+		background: var(--color-surface);
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius-md);
+		padding: var(--space-md);
+		margin-top: var(--space-xs);
+	}
+	.card-edit__preview-label {
+		font-size: var(--font-size-xs);
+		font-weight: 600;
+		color: var(--color-text-secondary);
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+		margin-bottom: var(--space-xs);
+	}
+	.card-edit__preview-content {
+		font-size: var(--font-size-md);
+		color: var(--color-text-primary);
+		line-height: 1.5;
+		/* Markdown styles matching flashcard */
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		justify-content: center;
+		min-height: 80px;
+	}
+	.card-edit__preview-content :global(p) {
+		margin: 0.5em 0;
+	}
+	.card-edit__preview-content :global(code) {
+		background: var(--color-surface-alt);
+		padding: 0.2em 0.4em;
+		border-radius: 4px;
+		font-family: monospace;
+		font-size: 0.9em;
+	}
+	.card-edit__preview-content :global(pre) {
+		background: var(--color-surface-alt);
+		padding: var(--space-sm);
+		border-radius: var(--radius-sm);
+		overflow-x: auto;
+		text-align: left;
+	}
+	.card-edit__preview-content :global(pre code) {
+		background: none;
+		padding: 0;
+	}
+	.card-edit__preview-content :global(strong) {
+		font-weight: 700;
+	}
+	.card-edit__preview-content :global(em) {
+		font-style: italic;
+	}
+	.card-edit__preview-content :global(ul),
+	.card-edit__preview-content :global(ol) {
+		text-align: left;
+		padding-left: var(--space-lg);
+	}
+	.card-edit__preview-content :global(li) {
+		margin: 0.3em 0;
+	}
+	.card-edit__preview-content :global(blockquote) {
+		border-left: 3px solid var(--color-border);
+		padding-left: var(--space-sm);
+		color: var(--color-text-secondary);
+		font-style: italic;
+	}
+	.card-edit__preview-content :global(h1),
+	.card-edit__preview-content :global(h2),
+	.card-edit__preview-content :global(h3),
+	.card-edit__preview-content :global(h4),
+	.card-edit__preview-content :global(h5),
+	.card-edit__preview-content :global(h6) {
+		font-weight: 700;
+		margin: 0.5em 0;
+		text-align: center;
+	}
+	.card-edit__preview-content :global(a) {
+		color: var(--color-primary);
+		text-decoration: underline;
+	}
+	.card-edit__preview-content :global(img) {
+		max-width: 100%;
+		display: block;
+		margin: var(--space-xs) auto;
+		pointer-events: none;
 	}
 	.card-edit__divider {
 		display: flex;
