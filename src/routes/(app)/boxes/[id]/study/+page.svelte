@@ -44,6 +44,7 @@
 		const currentSettings = (user.settings || {}) as UserSettings;
 		const updatedSettings = { ...currentSettings, [key]: value };
 		await pb.collection('users').update(user.id, { settings: updatedSettings });
+		await pb.collection('users').authRefresh();
 	}
 
 	async function toggleShowButtons() {

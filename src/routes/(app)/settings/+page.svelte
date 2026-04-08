@@ -34,10 +34,7 @@
     const currentSettings = (user.settings || {}) as UserSettings;
     const updatedSettings = { ...currentSettings, [key]: value };
     await pb.collection('users').update(user.id, { settings: updatedSettings });
-    // Update auth store record directly so changes are reflected immediately
-    if (pb.authStore.record) {
-      (pb.authStore.record as any).settings = { ...(pb.authStore.record as any).settings, ...updatedSettings };
-    }
+    await pb.collection('users').authRefresh();
   }
 
   async function toggleMarkdown() {

@@ -32,19 +32,16 @@
       loadUserHotkeys(user.hotkeys);
     }
   }
-
   async function saveUserHotkeys() {
-    const user = (pb.authStore.record as any);
-    if (!user) return;
+      const user = pb.authStore.record as any;
+      if (!user) return;
 
-    try {
-      await pb.collection('users').update(user.id, {
-        hotkeys: userBindings
-      });
-      console.log('Hotkeys saved to server');
-    } catch (e) {
-      console.error('Failed to save hotkeys:', e);
-    }
+      try {
+          await pb.collection('users').update(user.id, { hotkeys: userBindings });
+          await pb.collection('users').authRefresh();
+      } catch (e) {
+          console.error('Failed to save hotkeys:', e);
+      }
   }
 
   function getDefaultBindings(action: string): string[] {
