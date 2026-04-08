@@ -54,6 +54,7 @@
 	}
 
 	function onpointerdown(e: PointerEvent) {
+		if ((e.target as HTMLElement).closest('a')) return;
 		dragging = true;
 		didDrag = false;
 		startX = e.clientX;

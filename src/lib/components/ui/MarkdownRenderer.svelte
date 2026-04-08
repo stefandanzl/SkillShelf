@@ -85,16 +85,20 @@
 
 	const rendered = $derived(shouldEnableMarkdown ? marked(content) : content);
 
-	function handleClick(e: MouseEvent) {
-		console.log('Click');
-		// Stop click from bubbling to card flip handler for links and buttons
-		if ((e.target as HTMLElement).closest('a, button')) {
-			e.stopPropagation();
+	function linkHandler(node: HTMLElement, _rendered: unknown) {
+		function setupLinks() {
+			node.querySelectorAll('a').forEach((a) => {
+				a.target = '_blank';
+				a.rel = 'noopener noreferrer';
+			});
 		}
+
+		setupLinks();
+		return { update: setupLinks };
 	}
 </script>
 
-<div class="markdown-content" onclick={handleClick}>{@html rendered}</div>
+<div class="markdown-content" use:linkHandler={rendered}>{@html rendered}</div>
 
 <style>
 	.markdown-content {
