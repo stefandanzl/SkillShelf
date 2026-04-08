@@ -27,6 +27,10 @@
   // ── Help section ────────────────────────────────────────────────────────────
   let helpOpen = $state(false);
 
+  // ── Anki rows (set when .apkg is loaded, bypasses CSV parsing) ─────────────
+  let ankiRows = $state<{ front: string; back: string }[] | null>(null);
+  let swapAnkiFields = $state(false);
+
   // ── Import state ────────────────────────────────────────────────────────────
   let importing = $state(false);
   let importProgress = $state(0);
@@ -136,10 +140,49 @@
     return '\t';
   }
 
+  // ── Anki parsing ────────────────────────────────────────────────────────────
+  function loadScript(src: string): Promise<void> {
+    if (document.querySelector(`script[src="${src}"]`)) return Promise.resolve();
+    return new Promise((resolve, reject) => {
+      const s = document.createElement('script');
+      s.src = src;
+      s.onload = () => resolve();
+      s.onerror = reject;
+      document.head.appendChild(s);
+    });
+  }
+
+  async function parseApkg(file: File): Promise<{ front: string; back: string }[]> {
+    const [fflate] = await Promise.all([
+      import('https://cdn.jsdelivr.net/npm/fflate@0.8.2/+esm' as any),
+      loadScript('https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.12.0/sql-wasm.js')
+    ]);
+    const buf = await file.arrayBuffer();
+    const unzipped = fflate.unzipSync(new Uint8Array(buf));
+    const dbFile = unzipped['collection.anki2'] ?? unzipped['collection.anki21'];
+    if (!dbFile) throw new Error('No collection file found in .apkg');
+    const SQL = await (window as any).initSqlJs({
+      locateFile: (f: string) => `https://cdnjs.cloudflare.com/ajax/libs/sql.js/1.12.0/${f}`
+    });
+    const db = new SQL.Database(dbFile);
+    const result = db.exec('SELECT flds FROM notes');
+    db.close();
+    if (!result[0]) return [];
+    return result[0].values
+      .map((row: any[]) => {
+        const fields = (row[0] as string).split('\x1f');
+        return { front: (fields[0] ?? '').trim(), back: (fields[1] ?? '').trim() };
+      })
+      .filter((c: any) => c.front || c.back);
+  }
+
   // ── Parsed data ─────────────────────────────────────────────────────────────
   const activeDelimiter = $derived(getDelimiterChar(delimiterChoice, fileContent));
 
   const allRows = $derived.by(() => {
+    if (ankiRows !== null) return swapAnkiFields
+      ? ankiRows.map(r => ({ front: r.back, back: r.front }))
+      : ankiRows;
     if (!fileContent) return [];
 
     const lines = fileContent.split('\n').map(line => line.replace(/\r$/, ''));
@@ -191,11 +234,29 @@
   const cardCount = $derived(validCards.length);
 
   // ── File handling ───────────────────────────────────────────────────────────
-  function processFile(file: File) {
+  async function processFile(file: File) {
     fileError = '';
     const ext = file.name.split('.').pop()?.toLowerCase();
+
+    if (ext === 'apkg') {
+      if (file.size > 50 * 1024 * 1024) {
+        fileError = 'File is too large (max 50 MB).';
+        return;
+      }
+      fileName = file.name;
+      fileContent = 'anki'; // non-empty to trigger the file-loaded UI
+      try {
+        ankiRows = await parseApkg(file);
+      } catch (e: any) {
+        fileError = `Failed to parse .apkg: ${e?.message ?? 'Unknown error'}`;
+        fileContent = '';
+        ankiRows = null;
+      }
+      return;
+    }
+
     if (ext !== 'csv' && ext !== 'txt') {
-      fileError = 'Only .csv and .txt files are supported.';
+      fileError = 'Only .csv, .txt, and .apkg files are supported.';
       return;
     }
     if (file.size > 5 * 1024 * 1024) {
@@ -208,9 +269,7 @@
     reader.onload = (e) => {
       const text = (e.target?.result as string) ?? '';
       fileContent = text;
-      // Reset options for fresh auto-detection
       delimiterChoice = 'auto';
-      // Auto-detect header from first row
       autoDetectHeader(text);
     };
     reader.onerror = () => {
@@ -245,6 +304,8 @@
     fileContent = '';
     fileName = '';
     fileError = '';
+    ankiRows = null;
+    swapAnkiFields = false;
     textInput = '';
     importing = false;
     importProgress = 0;
@@ -384,14 +445,14 @@
           <polyline points="7 10 12 15 17 10"/>
           <line x1="12" y1="15" x2="12" y2="3"/>
         </svg>
-        <p class="drop-zone__text">Drag & drop a CSV or TXT file here</p>
+        <p class="drop-zone__text">Drag & drop a CSV, TXT, or APKG file here</p>
         <p class="drop-zone__subtext">or tap to browse</p>
       </div>
 
       <input
         bind:this={fileInput}
         type="file"
-        accept=".csv,.txt"
+        accept=".csv,.txt,.apkg"
         onchange={handleFileInput}
         class="sr-only"
       />
@@ -453,32 +514,42 @@ Question 2;Answer 2"
         </button>
       </div>
 
-      <!-- Options row -->
-      <div class="options">
-        <div class="option-group">
-          <label class="option-label" for="delimiter-select">Delimiter</label>
-          <select
-            id="delimiter-select"
-            class="option-select"
-            bind:value={delimiterChoice}
-          >
-            {#each (['auto', 'semicolon', 'comma', 'tab'] as const) as d (d)}
-              <option value={d}>{delimiterLabel(d)}</option>
-            {/each}
-          </select>
-        </div>
+      <!-- Swap toggle (Anki only) -->
+      {#if ankiRows !== null}
+        <label class="option-label">
+          <input type="checkbox" bind:checked={swapAnkiFields} class="option-checkbox" />
+          Swap front / back
+        </label>
+      {/if}
 
-        <div class="option-group">
-          <label class="option-label">
-            <input
-              type="checkbox"
-              bind:checked={firstRowIsHeader}
-              class="option-checkbox"
-            />
-            First row is header
-          </label>
+      <!-- Options row (CSV only) -->
+      {#if ankiRows === null}
+        <div class="options">
+          <div class="option-group">
+            <label class="option-label" for="delimiter-select">Delimiter</label>
+            <select
+              id="delimiter-select"
+              class="option-select"
+              bind:value={delimiterChoice}
+            >
+              {#each (['auto', 'semicolon', 'comma', 'tab'] as const) as d (d)}
+                <option value={d}>{delimiterLabel(d)}</option>
+              {/each}
+            </select>
+          </div>
+
+          <div class="option-group">
+            <label class="option-label">
+              <input
+                type="checkbox"
+                bind:checked={firstRowIsHeader}
+                class="option-checkbox"
+              />
+              First row is header
+            </label>
+          </div>
         </div>
-      </div>
+      {/if}
 
       <!-- Card count -->
       <div class="card-count">
