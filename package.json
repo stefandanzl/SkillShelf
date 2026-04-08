@@ -38,6 +38,7 @@
     "vite": "^6.0.0"
   },
   "dependencies": {
+    "katex": "^0.16.45",
     "marked": "^17.0.5",
     "svelte-i18n": "^4.0.1"
   }

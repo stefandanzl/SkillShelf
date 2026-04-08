@@ -1,5 +1,5 @@
 <script lang="ts">
-	import { marked } from 'marked';
+	import MarkdownRenderer from '$lib/components/ui/MarkdownRenderer.svelte';
 
 	interface Props {
 		front: string;
@@ -29,15 +29,6 @@
 		onflip,
 		ontogglestar
 	}: Props = $props();
-
-	// Configure marked for safe, basic rendering
-	marked.use({
-		gfm: true, // GitHub Flavored Markdown
-		breaks: true
-	});
-
-	const renderedFront = $derived(enableMarkdown ? marked(front) : front);
-	const renderedBack = $derived(enableMarkdown ? marked(back) : back);
 
 	let dragX = $state(0);
 	let dragY = $state(0);
@@ -102,7 +93,7 @@
 			dragging = false;
 		}
 	}
-	function onclick() {
+	function onclick(e: MouseEvent) {
 		if (!didDrag) {
 			onflip?.();
 		}
@@ -213,7 +204,7 @@
 					></polygon>
 				</svg>
 			</button>
-			<div class="card-face__content">{@html renderedFront}</div>
+			<div class="card-face__content"><MarkdownRenderer content={front} {enableMarkdown} /></div>
 			<div class="card-face__footer">
 				<button class="card-face__tts" aria-label="Text to speech">
 					<svg
@@ -259,7 +250,7 @@
 					></polygon>
 				</svg>
 			</button>
-			<div class="card-face__content">{@html renderedBack}</div>
+			<div class="card-face__content"><MarkdownRenderer content={back} {enableMarkdown} /></div>
 			<div class="card-face__footer">
 				<button class="card-face__tts" aria-label="Text to speech">
 					<svg
@@ -347,77 +338,8 @@
 		flex-direction: column;
 		align-items: center;
 		justify-content: center;
-		font-size: var(--font-size-md);
-		color: var(--color-text-primary);
 		text-align: center;
 		width: 100%;
-	}
-	/* Markdown styles */
-	.card-face__content :global(p) {
-		margin: 0.5em 0;
-	}
-	.card-face__content :global(code) {
-		background: var(--color-surface-alt);
-		padding: 0.2em 0.4em;
-		border-radius: 4px;
-		font-family: monospace;
-		font-size: 0.9em;
-	}
-	.card-face__content :global(pre) {
-		background: var(--color-surface-alt);
-		padding: var(--space-sm);
-		border-radius: var(--radius-sm);
-		overflow-x: auto;
-		text-align: left;
-	}
-	.card-face__content :global(pre code) {
-		background: none;
-		padding: 0;
-	}
-	.card-face__content :global(strong) {
-		font-weight: 700;
-	}
-	.card-face__content :global(em) {
-		font-style: italic;
-	}
-	.card-face__content :global(ul),
-	.card-face__content :global(ol) {
-		text-align: left;
-		padding-left: var(--space-lg);
-	}
-	.card-face__content :global(li) {
-		margin: 0.3em 0;
-	}
-	.card-face__content :global(blockquote) {
-		border-left: 3px solid var(--color-border);
-		padding-left: var(--space-sm);
-		color: var(--color-text-secondary);
-		font-style: italic;
-	}
-	.card-face__content :global(h1),
-	.card-face__content :global(h2),
-	.card-face__content :global(h3),
-	.card-face__content :global(h4),
-	.card-face__content :global(h5),
-	.card-face__content :global(h6) {
-		font-weight: 700;
-		margin: 0.5em 0;
-		text-align: center;
-	}
-	.card-face__content :global(a) {
-		color: var(--color-primary);
-		text-decoration: underline;
-	}
-	.card-face__content :global(a:hover) {
-		opacity: 0.8;
-	}
-	.card-face__content :global(img) {
-		max-width: 100%;
-		/* max-height: 50%; */
-		object-fit: contain;
-		display: block;
-		/* margin: var(--space-xs) auto; */
-		pointer-events: none;
 	}
 	.card-face__footer {
 		display: flex;
