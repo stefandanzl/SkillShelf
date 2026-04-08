@@ -2,86 +2,66 @@ import type { TypedPocketBase, UsersRecord } from './pocketbase-types';
 import type { ClientResponseError } from 'pocketbase';
 import { redirect, error, type RequestEvent } from '@sveltejs/kit';
 import PocketBase from 'pocketbase';
-
 import { browser, dev } from '$app/environment';
 import { env } from '$env/dynamic/public';
 
-export const getAvatarUrl = (user: UsersRecord) => {
-	// FIXME: Use pb.getFileUrl()
-	const base = `${env.PUBLIC_POCKETBASE_URL}/api/files/systemprofiles0`;
-	return user ? `${base}/${user.id}/${user.avatar}` : null;
-};
-
-export const pbError = (e: unknown) => {
-	const err = e as ClientResponseError;
-	if (dev) console.log(err?.response);
-	error(err?.status, err?.response?.message);
-};
-
-// ***** CSR Only: Used for realtime ***
 function createPocketBase(): TypedPocketBase {
-	const pb = new PocketBase(env.PUBLIC_POCKETBASE_URL) as TypedPocketBase;
-	// if (browser) {
-	// 	pb.authStore.loadFromCookie(document.cookie);
-	// }
-	// Disable auto-cancellation to allow concurrent requests
-	pb.autoCancellation(false);
-	return pb;
+	const instance = new PocketBase(env.PUBLIC_POCKETBASE_URL) as TypedPocketBase;
+
+	if (browser) {
+		instance.authStore.onChange(() => {
+			document.cookie = instance.authStore.exportToCookie({
+				httpOnly: false,
+				sameSite: 'Lax',
+				secure: !dev
+			});
+		});
+	}
+
+	return instance;
 }
 
+export function syncAuthFromCookie(): Promise<void> {
+	if (!browser) return Promise.resolve();
+	pb.authStore.loadFromCookie(document.cookie); // reads current cookie
+	if (!pb.authStore.isValid) return Promise.resolve();
+	return pb
+		.collection('users')
+		.authRefresh()
+		.then(() => {})
+		.catch(() => pb.authStore.clear());
+}
+
+// CSR only — import only from .svelte files or other .svelte.ts modules
 export const pb = $state(createPocketBase());
-// ***** End CSR Only ***
+
+export const getAvatarUrl = (user: UsersRecord | null | undefined): string | null => {
+	if (!user?.avatar) return null;
+	return pb.files.getURL(user, user.avatar);
+};
+
+export const pbError = (e: unknown): never => {
+	const err = e as ClientResponseError;
+	if (dev) console.error(err?.response);
+	error(err?.status ?? 500, err?.response?.message ?? 'Unknown error');
+};
 
 export class Security {
-	// TODO: What if you forget to call any of the security methods in a server load function? Oh noes!
-	// To protect against this you could set a flag in the security class whenever a check has been made,
-	// then check if any request with the event.isDataRequest set to true has been made without the flag
-	// being set and output a warning (at least in dev mode) or throw an exception (rather than risk
-	// accidentally exposing some data).
-
 	private readonly user: UsersRecord | null;
 
 	constructor(private readonly event: RequestEvent) {
-		this.user = event.locals.user || null;
+		this.user = event.locals.user ?? null;
 	}
 
-	isAuthenticated() {
-		if (!this.user) {
-			// redirect(307, '/sign/in')
-			error(401, 'You are not signed in.');
-		}
-		if (!this.user?.verified) {
-			redirect(307, '/verify');
-			// error(403, "Your account's email address has not been verified")
-		}
+	isAuthenticated(): this {
+		if (!this.user) error(401, 'You are not signed in.');
+		if (!this.user.verified) redirect(307, '/verify');
 		return this;
 	}
 
-	isAdmin() {
-		// Requires that you add admin to pb.collection('users')
+	isAdmin(): this {
 		this.isAuthenticated();
-
-		if (this.user && !this.user?.admin) {
-			error(403, 'Your account is not an administrator.');
-		}
+		if (!this.user?.admin) error(403, 'Your account is not an administrator.');
 		return this;
 	}
-
-	// https://www.captaincodeman.com/securing-your-sveltekit-app
-	// isProjectOwner(project: Project) {
-	//   if (!this.user || !project.owners.includes(this.user.uid)) {
-	//     error(403, 'not project owner')
-	//   }
-	//   return this
-	// }
 }
-
-// For CSR
-// import type { AuthModel } from '$lib/types';
-// export let pb: TypedPocketBase = new PocketBase(env.PUBLIC_POCKETBASE_URL);
-// let pbModel = $state(pb.authStore.model as AuthModel);
-
-// pb.authStore.onChange((auth) => {
-// 	// console.log('authStore changed', auth);
-// 	pbModel = pb.authStore.model;
-// });
