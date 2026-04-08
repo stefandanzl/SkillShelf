@@ -21,9 +21,9 @@ export const pbError = (e: unknown) => {
 // ***** CSR Only: Used for realtime ***
 function createPocketBase(): TypedPocketBase {
 	const pb = new PocketBase(env.PUBLIC_POCKETBASE_URL) as TypedPocketBase;
-	if (browser) {
-		pb.authStore.loadFromCookie(document.cookie);
-	}
+	// if (browser) {
+	// 	pb.authStore.loadFromCookie(document.cookie);
+	// }
 	// Disable auto-cancellation to allow concurrent requests
 	pb.autoCancellation(false);
 	return pb;

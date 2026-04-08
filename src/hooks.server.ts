@@ -11,7 +11,14 @@ export const handle: Handle = async ({ event, resolve }) => {
 	if (dev && event.url.pathname === '/.well-known/appspecific/com.chrome.devtools.json') {
 		return new Response(undefined, { status: 404 });
 	}
-	event.locals.pb = new PocketBase(env.POCKETBASE_URL) as TypedPocketBase;
+
+	// Ensure POCKETBASE_URL is set - fallback to localhost for development
+	const pocketbaseUrl = env.POCKETBASE_URL || (dev ? 'http://localhost:8090' : '');
+	if (!pocketbaseUrl) {
+		throw new Error('POCKETBASE_URL environment variable is not set');
+	}
+
+	event.locals.pb = new PocketBase(pocketbaseUrl) as TypedPocketBase;
 	event.locals.pb.authStore.loadFromCookie(event.request.headers.get('cookie') || '');
 
 	// dev && console.log('hooks.server: ', locals.pb.authStore.model);

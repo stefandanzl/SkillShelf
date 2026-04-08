@@ -137,19 +137,20 @@
 		if (!currentCard || submitting || isLast) return;
 		submitting = true;
 
+		// Reset flip state FIRST so new card starts fresh
+		flipped = false;
+		showResult = false;
+
 		// Start swipe animation
 		const animationPromise = flashcardRef?.triggerSwipe('down') ?? Promise.resolve();
+		// Wait for animation to complete
+		await animationPromise;
 
 		// Move current card to the back of the queue immediately
 		const currentEntry = queue[currentIndex];
 		queue = queue.filter((_, i) => i !== currentIndex);
 		queue.push(currentEntry);
 
-		// Wait for animation to complete before resetting state
-		await animationPromise;
-
-		flipped = false;
-		showResult = false;
 		submitting = false;
 		// Don't increment currentIndex since we removed the current element
 	}
