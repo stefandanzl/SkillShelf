@@ -9,7 +9,8 @@
   import SegmentedControl from '$lib/components/ui/SegmentedControl.svelte';
   import { pb } from '$lib/pocketbase.svelte';
   import { updateBox, deleteBox } from '$lib/api';
-  import type { BoxesColorOptions } from '$lib/pocketbase-types';
+  import type { BoxesColorOptions, CoursesRecord } from '$lib/pocketbase-types';
+  import CourseSelect from '$lib/components/ui/CourseSelect.svelte';
 
   let { data } = $props();
 
@@ -19,14 +20,22 @@
   let ttsEnabled = $state(false);
   let learnDirection = $state('front-to-back');
   let selectedColor = $state('blue');
+  let selectedCourseId = $state('');
+  let courses = $state<CoursesRecord[]>(data.courses ?? []);
 
   $effect(() => {
     if (box) {
       selectedColor = box.color ?? 'blue';
       learnDirection = box.learn_direction ?? 'front-to-back';
       ttsEnabled = !!box.tts_language;
+      selectedCourseId = box.course ?? '';
     }
   });
+
+  async function handleCourseChange(courseId: string) {
+    selectedCourseId = courseId;
+    await updateBox(pb as any, boxId!, { course: courseId || undefined });
+  }
 
   const directionSegments = [
     { value: 'front-to-back', label: '→' },
@@ -66,6 +75,19 @@
   <TopBar showBack title={$t('box.settings_title')} onback={() => goto(`/boxes/${boxId}`)} />
 
   <div class="box-settings__content">
+
+    <!-- Course -->
+    <section class="box-settings__section">
+      <div class="course-row">
+        <span class="course-row__label">Course</span>
+        <CourseSelect
+          {courses}
+          value={selectedCourseId}
+          onchange={handleCourseChange}
+          oncreated={(c) => { courses = [...courses, c]; }}
+        />
+      </div>
+    </section>
 
     <!-- Learning Direction -->
     <section class="box-settings__section">
@@ -191,6 +213,19 @@
     display: flex;
     flex-direction: column;
     gap: var(--space-sm);
+  }
+  .course-row {
+    background: var(--color-surface);
+    border-radius: var(--radius-md);
+    padding: var(--space-sm) var(--space-md);
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+  }
+  .course-row__label {
+    font-size: var(--font-size-sm);
+    color: var(--color-text-secondary);
+    font-weight: 600;
   }
   .color-swatches {
     display: flex;

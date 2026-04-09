@@ -298,7 +298,7 @@
 			},
 			{
 				"hidden": false,
-				"id": "json7031455681",
+				"id": "json3846545605",
 				"maxSize": 0,
 				"name": "settings",
 				"presentable": false,
@@ -876,6 +876,19 @@
 				"type": "text"
 			},
 			{
+				"cascadeDelete": false,
+				"collectionId": "courses_",
+				"hidden": false,
+				"id": "boxes_course",
+				"maxSelect": 1,
+				"minSelect": 0,
+				"name": "course",
+				"presentable": false,
+				"required": false,
+				"system": false,
+				"type": "relation"
+			},
+			{
 				"hidden": false,
 				"id": "autodate2990389176",
 				"name": "created",
@@ -1159,6 +1172,95 @@
 			{
 				"hidden": false,
 				"id": "cards_updated",
+				"name": "updated",
+				"onCreate": true,
+				"onUpdate": true,
+				"presentable": false,
+				"system": false,
+				"type": "autodate"
+			}
+		],
+		"indexes": [],
+		"system": false
+	},
+	{
+		"id": "courses_",
+		"listRule": "user = @request.auth.id",
+		"viewRule": "user = @request.auth.id",
+		"createRule": "@request.auth.verified = true",
+		"updateRule": "user = @request.auth.id",
+		"deleteRule": "user = @request.auth.id",
+		"name": "courses",
+		"type": "base",
+		"fields": [
+			{
+				"autogeneratePattern": "[a-z0-9]{15}",
+				"hidden": false,
+				"id": "text3208210256",
+				"max": 15,
+				"min": 15,
+				"name": "id",
+				"pattern": "^[a-z0-9]+$",
+				"presentable": false,
+				"primaryKey": true,
+				"required": true,
+				"system": true,
+				"type": "text"
+			},
+			{
+				"autogeneratePattern": "",
+				"hidden": false,
+				"id": "courses_name",
+				"max": 0,
+				"min": 0,
+				"name": "name",
+				"pattern": "",
+				"presentable": true,
+				"primaryKey": false,
+				"required": true,
+				"system": false,
+				"type": "text"
+			},
+			{
+				"autogeneratePattern": "",
+				"hidden": false,
+				"id": "courses_color",
+				"max": 0,
+				"min": 0,
+				"name": "color",
+				"pattern": "",
+				"presentable": false,
+				"primaryKey": false,
+				"required": false,
+				"system": false,
+				"type": "text"
+			},
+			{
+				"cascadeDelete": false,
+				"collectionId": "_pb_users_auth_",
+				"hidden": false,
+				"id": "courses_user",
+				"maxSelect": 1,
+				"minSelect": 0,
+				"name": "user",
+				"presentable": false,
+				"required": false,
+				"system": false,
+				"type": "relation"
+			},
+			{
+				"hidden": false,
+				"id": "autodate_courses_created",
+				"name": "created",
+				"onCreate": true,
+				"onUpdate": false,
+				"presentable": false,
+				"system": false,
+				"type": "autodate"
+			},
+			{
+				"hidden": false,
+				"id": "autodate_courses_updated",
 				"name": "updated",
 				"onCreate": true,
 				"onUpdate": true,

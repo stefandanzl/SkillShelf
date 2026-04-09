@@ -7,7 +7,9 @@ import type {
 	// BoxesLearnDirectionOptions,
 	BoxesResponse,
 	CardsResponse,
-	CardProgressResponse
+	CardProgressResponse,
+	CoursesRecord,
+	CoursesResponse
 } from '$lib/pocketbase-types';
 import { BoxesLearnDirectionOptions } from '$lib/pocketbase-types';
 import { processAnswer } from './leitner';
@@ -28,7 +30,7 @@ export async function getBox(pb: TypedPocketBase, id: string): Promise<BoxesResp
 
 export async function createBox(
 	pb: TypedPocketBase,
-	data: { name: string; color: BoxesColorOptions; learn_direction?: BoxesLearnDirectionOptions; tts_language?: string }
+	data: { name: string; color: BoxesColorOptions; learn_direction?: BoxesLearnDirectionOptions; tts_language?: string; course?: string }
 ): Promise<BoxesResponse> {
 	const ownerId = pb.authStore.record?.id;
 	return pb.collection('boxes').create({
@@ -36,16 +38,40 @@ export async function createBox(
 		owner: ownerId,
 		color: data.color,
 		learn_direction: data.learn_direction ?? BoxesLearnDirectionOptions.front_to_back,
-		tts_language: data.tts_language ?? ''
+		tts_language: data.tts_language ?? '',
+		course: data.course ?? ''
 	});
 }
 
 export async function updateBox(
 	pb: TypedPocketBase,
 	id: string,
-	data: Partial<Pick<BoxesRecord, 'name' | 'color' | 'learn_direction' | 'tts_language'>>
+	data: Partial<Pick<BoxesRecord, 'name' | 'color' | 'learn_direction' | 'tts_language' | 'course'>>
 ): Promise<BoxesResponse> {
 	return pb.collection('boxes').update(id, data);
+}
+
+// ── Courses ───────────────────────────────────────────────────────────────────
+
+export async function getCourses(pb: TypedPocketBase): Promise<CoursesRecord[]> {
+	const userId = pb.authStore.record?.id;
+	const result = await pb.collection('courses').getList(1, 200, {
+		filter: `user = "${userId}"`,
+		sort: 'name'
+	});
+	return result.items;
+}
+
+export async function createCourse(
+	pb: TypedPocketBase,
+	data: { name: string; color?: string }
+): Promise<CoursesResponse> {
+	const userId = pb.authStore.record?.id;
+	return pb.collection('courses').create({
+		name: data.name,
+		color: data.color ?? '',
+		user: userId
+	});
 }
 
 export async function deleteBox(pb: TypedPocketBase, id?: string): Promise<void> {

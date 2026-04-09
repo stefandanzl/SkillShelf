@@ -14,6 +14,7 @@ export enum Collections {
 	Boxes = "boxes",
 	CardProgress = "card_progress",
 	Cards = "cards",
+	Courses = "courses",
 	StudySessions = "study_sessions",
 	Users = "users",
 }
@@ -112,6 +113,7 @@ export enum BoxesLearnDirectionOptions {
 }
 export type BoxesRecord = {
 	color?: BoxesColorOptions
+	course?: RecordIdString
 	created: IsoAutoDateString
 	id: string
 	learn_direction?: BoxesLearnDirectionOptions
@@ -145,6 +147,15 @@ export type CardsRecord = {
 	id: string
 	sort_order?: number
 	updated: IsoAutoDateString
+}
+
+export type CoursesRecord = {
+	color?: string
+	created: IsoAutoDateString
+	id: string
+	name: string
+	updated: IsoAutoDateString
+	user?: RecordIdString
 }
 
 export type StudySessionsRecord = {
@@ -185,6 +196,7 @@ export type SuperusersResponse<Texpand = unknown> = Required<SuperusersRecord> &
 export type BoxesResponse<Texpand = unknown> = Required<BoxesRecord> & BaseSystemFields<Texpand>
 export type CardProgressResponse<Texpand = unknown> = Required<CardProgressRecord> & BaseSystemFields<Texpand>
 export type CardsResponse<Texpand = unknown> = Required<CardsRecord> & BaseSystemFields<Texpand>
+export type CoursesResponse<Texpand = unknown> = Required<CoursesRecord> & BaseSystemFields<Texpand>
 export type StudySessionsResponse<Texpand = unknown> = Required<StudySessionsRecord> & BaseSystemFields<Texpand>
 export type UsersResponse<Thotkeys = unknown, Tsettings = unknown, Texpand = unknown> = Required<UsersRecord<Thotkeys, Tsettings>> & AuthSystemFields<Texpand>
 
@@ -199,6 +211,7 @@ export type CollectionRecords = {
 	boxes: BoxesRecord
 	card_progress: CardProgressRecord
 	cards: CardsRecord
+	courses: CoursesRecord
 	study_sessions: StudySessionsRecord
 	users: UsersRecord
 }
@@ -212,6 +225,7 @@ export type CollectionResponses = {
 	boxes: BoxesResponse
 	card_progress: CardProgressResponse
 	cards: CardsResponse
+	courses: CoursesResponse
 	study_sessions: StudySessionsResponse
 	users: UsersResponse
 }
