@@ -1,4 +1,5 @@
 <script lang="ts">
+	import { onDestroy } from 'svelte';
 	import MarkdownRenderer from '$lib/components/ui/MarkdownRenderer.svelte';
 
 	interface Props {
@@ -47,10 +48,12 @@
 
 	// Update viewport on resize
 	if (typeof window !== 'undefined') {
-		window.addEventListener('resize', () => {
+		const onresize = () => {
 			viewportWidth = window.innerWidth;
 			viewportHeight = window.innerHeight;
-		});
+		};
+		window.addEventListener('resize', onresize);
+		onDestroy(() => window.removeEventListener('resize', onresize));
 	}
 
 	function onpointerdown(e: PointerEvent) {
