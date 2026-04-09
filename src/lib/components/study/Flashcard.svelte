@@ -92,9 +92,19 @@
 			dragX = 0;
 			dragY = 0;
 			dragging = false;
+			if (!didDrag) {
+				flippedFromPointerUp = true;
+				onflip?.();
+			}
 		}
 	}
+	let flippedFromPointerUp = false;
 	function onclick(e: MouseEvent) {
+		if ((e.target as HTMLElement).closest('a')) return;
+		if (flippedFromPointerUp) {
+			flippedFromPointerUp = false;
+			return;
+		}
 		if (!didDrag) {
 			onflip?.();
 		}
