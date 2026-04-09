@@ -890,6 +890,16 @@
 			},
 			{
 				"hidden": false,
+				"id": "boxes_archived",
+				"name": "archived",
+				"presentable": false,
+				"primaryKey": false,
+				"required": false,
+				"system": false,
+				"type": "bool"
+			},
+			{
+				"hidden": false,
 				"id": "autodate2990389176",
 				"name": "created",
 				"onCreate": true,
@@ -1234,6 +1244,16 @@
 				"required": false,
 				"system": false,
 				"type": "text"
+			},
+			{
+				"hidden": false,
+				"id": "courses_archived",
+				"name": "archived",
+				"presentable": false,
+				"primaryKey": false,
+				"required": false,
+				"system": false,
+				"type": "bool"
 			},
 			{
 				"cascadeDelete": false,

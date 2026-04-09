@@ -697,20 +697,6 @@ migrate((app) => {
         },
         {
           "hidden": false,
-          "id": "select3571151285",
-          "maxSelect": 1,
-          "name": "language",
-          "presentable": false,
-          "required": false,
-          "system": false,
-          "type": "select",
-          "values": [
-            "en",
-            "de"
-          ]
-        },
-        {
-          "hidden": false,
           "id": "bool2282622326",
           "name": "admin",
           "presentable": false,
@@ -723,6 +709,16 @@ migrate((app) => {
           "id": "json1158659468",
           "maxSize": 0,
           "name": "hotkeys",
+          "presentable": false,
+          "required": false,
+          "system": false,
+          "type": "json"
+        },
+        {
+          "hidden": false,
+          "id": "json3846545605",
+          "maxSize": 0,
+          "name": "settings",
           "presentable": false,
           "required": false,
           "system": false,
@@ -899,6 +895,28 @@ migrate((app) => {
           "required": false,
           "system": false,
           "type": "text"
+        },
+        {
+          "cascadeDelete": false,
+          "collectionId": "courses_",
+          "hidden": false,
+          "id": "boxes_course",
+          "maxSelect": 1,
+          "minSelect": 0,
+          "name": "course",
+          "presentable": false,
+          "required": false,
+          "system": false,
+          "type": "relation"
+        },
+        {
+          "hidden": false,
+          "id": "boxes_archived",
+          "name": "archived",
+          "presentable": false,
+          "required": false,
+          "system": false,
+          "type": "bool"
         },
         {
           "hidden": false,
@@ -1328,6 +1346,104 @@ migrate((app) => {
       "indexes": [],
       "listRule": "user = @request.auth.id",
       "name": "study_sessions",
+      "system": false,
+      "type": "base",
+      "updateRule": "user = @request.auth.id",
+      "viewRule": "user = @request.auth.id"
+    },
+    {
+      "createRule": "@request.auth.verified = true",
+      "deleteRule": "user = @request.auth.id",
+      "fields": [
+        {
+          "autogeneratePattern": "[a-z0-9]{15}",
+          "hidden": false,
+          "id": "text3208210256",
+          "max": 15,
+          "min": 15,
+          "name": "id",
+          "pattern": "^[a-z0-9]+$",
+          "presentable": false,
+          "primaryKey": true,
+          "required": true,
+          "system": true,
+          "type": "text"
+        },
+        {
+          "autogeneratePattern": "",
+          "hidden": false,
+          "id": "courses_name",
+          "max": 0,
+          "min": 0,
+          "name": "name",
+          "pattern": "",
+          "presentable": true,
+          "primaryKey": false,
+          "required": true,
+          "system": false,
+          "type": "text"
+        },
+        {
+          "autogeneratePattern": "",
+          "hidden": false,
+          "id": "courses_color",
+          "max": 0,
+          "min": 0,
+          "name": "color",
+          "pattern": "",
+          "presentable": false,
+          "primaryKey": false,
+          "required": false,
+          "system": false,
+          "type": "text"
+        },
+        {
+          "hidden": false,
+          "id": "courses_archived",
+          "name": "archived",
+          "presentable": false,
+          "required": false,
+          "system": false,
+          "type": "bool"
+        },
+        {
+          "cascadeDelete": false,
+          "collectionId": "_pb_users_auth_",
+          "hidden": false,
+          "id": "courses_user",
+          "maxSelect": 1,
+          "minSelect": 0,
+          "name": "user",
+          "presentable": false,
+          "required": false,
+          "system": false,
+          "type": "relation"
+        },
+        {
+          "hidden": false,
+          "id": "autodate_courses_created",
+          "name": "created",
+          "onCreate": true,
+          "onUpdate": false,
+          "presentable": false,
+          "system": false,
+          "type": "autodate"
+        },
+        {
+          "hidden": false,
+          "id": "autodate_courses_updated",
+          "name": "updated",
+          "onCreate": true,
+          "onUpdate": true,
+          "presentable": false,
+          "system": false,
+          "type": "autodate"
+        }
+      ],
+      "id": "courses_",
+      "indexes": [],
+      "listRule": "user = @request.auth.id",
+      "name": "courses",
       "system": false,
       "type": "base",
       "updateRule": "user = @request.auth.id",

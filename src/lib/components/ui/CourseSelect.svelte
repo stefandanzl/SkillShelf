@@ -35,7 +35,10 @@
 		if (!newName.trim() || creating || isDuplicate) return;
 		creating = true;
 		try {
-			const course = await createCourse(pb as any, { name: newName.trim() });
+			const course = await createCourse(pb as any, {
+				name: newName.trim(),
+				color: '#5BABF5'
+			});
 			oncreated?.(course as unknown as CoursesRecord);
 			onchange?.(course.id);
 			newName = '';

@@ -74,6 +74,18 @@ export async function createCourse(
 	});
 }
 
+export async function updateCourse(
+	pb: TypedPocketBase,
+	id: string,
+	data: Partial<Pick<CoursesRecord, 'name' | 'color' | 'archived'>>
+): Promise<CoursesResponse> {
+	return pb.collection('courses').update(id, data);
+}
+
+export async function deleteCourse(pb: TypedPocketBase, id: string): Promise<void> {
+	await pb.collection('courses').delete(id);
+}
+
 export async function deleteBox(pb: TypedPocketBase, id?: string): Promise<void> {
 	if (!id) throw new Error('id undefined!');
 	await pb.collection('boxes').delete(id);

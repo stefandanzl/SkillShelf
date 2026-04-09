@@ -112,6 +112,7 @@ export enum BoxesLearnDirectionOptions {
 	"random" = "random",
 }
 export type BoxesRecord = {
+	archived?: boolean
 	color?: BoxesColorOptions
 	course?: RecordIdString
 	created: IsoAutoDateString
@@ -150,6 +151,7 @@ export type CardsRecord = {
 }
 
 export type CoursesRecord = {
+	archived?: boolean
 	color?: string
 	created: IsoAutoDateString
 	id: string

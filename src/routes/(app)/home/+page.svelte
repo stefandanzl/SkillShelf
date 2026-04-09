@@ -6,6 +6,7 @@
 	import Sheet from '$lib/components/ui/Sheet.svelte';
 	import SegmentedControl from '$lib/components/ui/SegmentedControl.svelte';
 	import PillButton from '$lib/components/ui/PillButton.svelte';
+	import CourseEdit from '$lib/components/ui/CourseEdit.svelte';
 	import { goto, invalidateAll } from '$app/navigation';
 	import { pb } from '$lib/pocketbase.svelte';
 	import { createBox } from '$lib/api';
@@ -17,6 +18,26 @@
 	let { data } = $props();
 
 	let courses = $state<CoursesRecord[]>(data.courses ?? []);
+
+	// ── Course edit modal ─────────────────────────────────────────────────────────
+	let showEditCourse = $state(false);
+	let selectedCourse = $state<CoursesRecord | null>(null);
+
+	function openCourseEdit(course: CoursesRecord) {
+		selectedCourse = course;
+		showEditCourse = true;
+	}
+
+	function handleCourseDeleted(courseId: string) {
+		courses = courses.filter((c) => c.id !== courseId);
+	}
+
+	function handleCourseUpdated(updated: CoursesRecord) {
+		const idx = courses.findIndex((c) => c.id === updated.id);
+		if (idx !== -1) {
+			courses[idx] = updated;
+		}
+	}
 
 	// ── View toggle ──────────────────────────────────────────────────────────────
 	let groupedView = $state(true);
@@ -53,16 +74,12 @@
 	}
 
 	// ── Grouped data ─────────────────────────────────────────────────────────────
-	const courseMap = $derived(
-		new Map(courses.map((c: any) => [c.id, c]))
-	);
+	const courseMap = $derived(new Map(courses.map((c: any) => [c.id, c])));
 
 	const grouped = $derived.by(() => {
 		const summaries = data.boxSummaries ?? [];
 
-		const sortedCourses = [...courses].sort((a: any, b: any) =>
-			a.name.localeCompare(b.name)
-		);
+		const sortedCourses = [...courses].sort((a: any, b: any) => a.name.localeCompare(b.name));
 
 		const byCourse = new Map<string, typeof summaries>();
 		const uncategorized: typeof summaries = [];
@@ -147,14 +164,42 @@
 				title={groupedView ? 'Switch to flat view' : 'Switch to grouped view'}
 			>
 				{#if groupedView}
-					<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-						<line x1="8" y1="6" x2="21" y2="6"/><line x1="8" y1="12" x2="21" y2="12"/><line x1="8" y1="18" x2="21" y2="18"/>
-						<line x1="3" y1="6" x2="3.01" y2="6"/><line x1="3" y1="12" x2="3.01" y2="12"/><line x1="3" y1="18" x2="3.01" y2="18"/>
+					<svg
+						width="18"
+						height="18"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+					>
+						<line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line
+							x1="8"
+							y1="18"
+							x2="21"
+							y2="18"
+						></line>
+						<line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line
+							x1="3"
+							y1="18"
+							x2="3.01"
+							y2="18"
+						></line>
 					</svg>
 				{:else}
-					<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-						<rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/>
-						<rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/>
+					<svg
+						width="18"
+						height="18"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+					>
+						<rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect>
+						<rect x="3" y="14" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect>
 					</svg>
 				{/if}
 			</button>
@@ -195,23 +240,42 @@
 			{#each grouped.sortedCourses as course (course.id)}
 				{@const boxes = grouped.byCourse.get(course.id) ?? []}
 				{#if boxes.length > 0}
-					<div class="course-section">
-						<button
-							class="course-header"
-							onclick={() => toggleCourse(course.id)}
-						>
-							<svg
-								class="course-chevron"
-								class:course-chevron--open={expandedCourseIds.has(course.id)}
-								width="16" height="16" viewBox="0 0 24 24" fill="none"
-								stroke="currentColor" stroke-width="2.5"
-								stroke-linecap="round" stroke-linejoin="round"
-							>
-								<polyline points="9 18 15 12 9 6"></polyline>
-							</svg>
-							<span class="course-header__name">{course.name}</span>
-							<span class="course-header__count">{boxes.length}</span>
-						</button>
+					<div class="course-section" style="border-color: {course.color || 'transparent'};">
+						<div class="course-header">
+							<button class="course-header__toggle" onclick={() => toggleCourse(course.id)}>
+								<svg
+									class="course-chevron"
+									class:course-chevron--open={expandedCourseIds.has(course.id)}
+									width="16"
+									height="16"
+									viewBox="0 0 24 24"
+									fill="none"
+									stroke="currentColor"
+									stroke-width="2.5"
+									stroke-linecap="round"
+									stroke-linejoin="round"
+								>
+									<polyline points="9 18 15 12 9 6"></polyline>
+								</svg>
+								<span class="course-header__name">{course.name}</span>
+								<span class="course-header__count">{boxes.length}</span>
+							</button>
+							<button class="course-edit-btn" onclick={() => openCourseEdit(course)} aria-label="Edit course">
+								<svg
+									width="12"
+									height="12"
+									viewBox="0 0 24 24"
+									fill="none"
+									stroke="currentColor"
+									stroke-width="2"
+									stroke-linecap="round"
+									stroke-linejoin="round"
+								>
+									<path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path>
+									<path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path>
+								</svg>
+							</button>
+						</div>
 
 						{#if expandedCourseIds.has(course.id)}
 							<div class="course-boxes">
@@ -270,9 +334,7 @@
 				</svg>
 				<span class="topic-card__count">
 					{summary.totalCards} /
-					<span class="topic-card__due" class:topic-card__due--active={summary.dueCount > 0}
-						>{summary.dueCount}</span
-					>
+					<span class="topic-card__due" class:topic-card__due--active={summary.dueCount > 0}>{summary.dueCount}</span>
 				</span>
 			</div>
 		</div>
@@ -354,6 +416,16 @@
 	{/snippet}
 </Sheet>
 
+{#if selectedCourse}
+	<CourseEdit
+		open={showEditCourse}
+		course={selectedCourse}
+		onclose={() => (showEditCourse = false)}
+		ondeleted={() => handleCourseDeleted(selectedCourse.id)}
+		onupdated={(c) => handleCourseUpdated(c)}
+	/>
+{/if}
+
 <style>
 	.home {
 		padding: var(--space-md);
@@ -416,8 +488,18 @@
 		display: flex;
 		flex-direction: column;
 		gap: 0;
+		border: 1px solid;
+		border-radius: var(--radius-lg);
+		/* padding: var(--space-xs); */
 	}
 	.course-header {
+		display: flex;
+		align-items: center;
+		gap: var(--space-xs);
+		height: 50px;
+	}
+	.course-header__toggle {
+		flex: 1;
 		display: flex;
 		align-items: center;
 		gap: var(--space-xs);
@@ -426,11 +508,13 @@
 		border: none;
 		cursor: pointer;
 		text-align: left;
-		width: 100%;
 		color: var(--color-text-primary);
 	}
-	.course-header:hover {
+	.course-header__toggle:hover {
 		color: var(--color-primary);
+	}
+	.course-header__toggle:hover .course-header__name {
+		color: var(--color-text-primary);
 	}
 	.course-chevron {
 		flex-shrink: 0;
@@ -447,9 +531,6 @@
 		text-transform: uppercase;
 		letter-spacing: 0.06em;
 		color: var(--color-text-secondary);
-	}
-	.course-header:hover .course-header__name {
-		color: var(--color-text-primary);
 	}
 	.course-header__count {
 		font-size: var(--font-size-xs);
@@ -468,6 +549,28 @@
 		background: var(--color-surface-alt);
 	}
 
+	.course-edit-btn {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		width: 28px;
+		height: 28px;
+		flex-shrink: 0;
+		border-radius: var(--radius-sm);
+		border: none;
+		background: transparent;
+		color: var(--color-text-secondary);
+		cursor: pointer;
+		transition:
+			background var(--transition-fast),
+			color var(--transition-fast);
+	}
+
+	.course-edit-btn:hover {
+		background: var(--color-surface-alt);
+		color: var(--color-primary);
+	}
+
 	/* View toggle */
 	.view-toggle {
 		display: flex;
@@ -480,7 +583,9 @@
 		background: none;
 		color: var(--color-text-secondary);
 		cursor: pointer;
-		transition: background var(--transition-fast), color var(--transition-fast);
+		transition:
+			background var(--transition-fast),
+			color var(--transition-fast);
 	}
 	.view-toggle:hover {
 		background: var(--color-surface-alt);
@@ -575,7 +680,7 @@
 		border-color: var(--color-primary);
 		outline: none;
 	}
-.create-box__char-count {
+	.create-box__char-count {
 		font-size: var(--font-size-xs);
 		color: var(--color-text-secondary);
 		text-align: right;
