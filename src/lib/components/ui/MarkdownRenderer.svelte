@@ -19,6 +19,23 @@
 
 	// Configure marked once
 	marked.use({
+		renderer: {
+			html(token) {
+				return token.text
+					.replace(/<span[^>]*class="arithmatex"[^>]*>([\s\S]*?)<\/span>/g, (_, inner) => inner.trim())
+					.replace(/\\\[([\s\S]*?)\\\]/g, (_, m) =>
+						`<div class="math-block">${katex.renderToString(m.trim(), { displayMode: true, throwOnError: false })}</div>`)
+					.replace(/\\\(([\s\S]*?)\\\)/g, (_, m) =>
+						katex.renderToString(m.trim(), { displayMode: false, throwOnError: false }))
+					.replace(/\$\$([\s\S]*?)\$\$/g, (_, m) =>
+						`<div class="math-block">${katex.renderToString(m.trim(), { displayMode: true, throwOnError: false })}</div>`)
+					.replace(/\$(?!\$)((?:\\.|[^\\\n])*?(?:\\.|[^\\\n$]))\$(?=[\s?!.,：，。？！]|$)/g, (_, m) =>
+						katex.renderToString(m.trim(), { displayMode: false, throwOnError: false }));
+			}
+		}
+	});
+
+	marked.use({
 		gfm: true,
 		breaks: true,
 		extensions: [
@@ -66,18 +83,45 @@
 					return src.indexOf('$');
 				},
 				tokenizer(src) {
-					// Use a more specific regex to avoid matching the start of a $$ block
-					const match = /^\$((?:[^\$\n]|\\\$)+)\$/.exec(src);
+					const match = /^\$(?!\$)((?:\\.|[^\\\n])*?(?:\\.|[^\\\n$]))\$(?=[\s?!.,：，。？！]|$)/.exec(src);
 					if (match) {
-						return {
-							type: 'inlineMath',
-							raw: match[0],
-							text: match[1].trim()
-						};
+						return { type: 'inlineMath', raw: match[0], text: match[1].trim() };
 					}
 				},
 				renderer(token) {
 					return katex.renderToString(token.text, { displayMode: false, throwOnError: false });
+				}
+			},
+			{
+				name: 'inlineMathParen',
+				level: 'inline',
+				start(src) {
+					return src.indexOf('\\(');
+				},
+				tokenizer(src) {
+					const match = /^\\\(([\s\S]*?)\\\)/.exec(src);
+					if (match) {
+						return { type: 'inlineMathParen', raw: match[0], text: match[1].trim() };
+					}
+				},
+				renderer(token) {
+					return katex.renderToString(token.text, { displayMode: false, throwOnError: false });
+				}
+			},
+			{
+				name: 'blockMathParen',
+				level: 'block',
+				start(src) {
+					return src.indexOf('\\[');
+				},
+				tokenizer(src) {
+					const match = /^\\\[([\s\S]*?)\\\]/.exec(src);
+					if (match) {
+						return { type: 'blockMathParen', raw: match[0], text: match[1].trim() };
+					}
+				},
+				renderer(token) {
+					return `<div class="math-block">${katex.renderToString(token.text, { displayMode: true, throwOnError: false })}</div>`;
 				}
 			}
 		]
