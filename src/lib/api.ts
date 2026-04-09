@@ -9,7 +9,9 @@ import type {
 	CardsResponse,
 	CardProgressResponse,
 	CoursesRecord,
-	CoursesResponse
+	CoursesResponse,
+	ImagesRecord,
+	ImagesResponse
 } from '$lib/pocketbase-types';
 import { BoxesLearnDirectionOptions } from '$lib/pocketbase-types';
 import { processAnswer } from './leitner';
@@ -30,7 +32,13 @@ export async function getBox(pb: TypedPocketBase, id: string): Promise<BoxesResp
 
 export async function createBox(
 	pb: TypedPocketBase,
-	data: { name: string; color: BoxesColorOptions; learn_direction?: BoxesLearnDirectionOptions; tts_language?: string; course?: string }
+	data: {
+		name: string;
+		color: BoxesColorOptions;
+		learn_direction?: BoxesLearnDirectionOptions;
+		tts_language?: string;
+		course?: string;
+	}
 ): Promise<BoxesResponse> {
 	const ownerId = pb.authStore.record?.id;
 	return pb.collection('boxes').create({
@@ -162,7 +170,7 @@ export async function getDueCards(
 	const progressMap = new Map(progressList.map((p) => [p.card, p]));
 
 	// Return all cards with their progress
-	return cards.map(card => ({
+	return cards.map((card) => ({
 		card,
 		progress: progressMap.get(card.id) ?? null
 	}));
@@ -222,4 +230,60 @@ export function buildLevelCounts(
 		levels[level - 1]++;
 	}
 	return { levels, starred };
+}
+
+// ── Images ─────────────────────────────────────────────────────────────────────
+
+export async function getImagesForBox(pb: TypedPocketBase, boxId: string): Promise<ImagesRecord[]> {
+	// Get all images that include this box in their boxes array
+	const result = await pb.collection('images').getList(1, 500, {
+		filter: `boxes ~ "${boxId}"`
+	});
+	return result.items;
+}
+
+export async function findOrCreateImage(
+	pb: TypedPocketBase,
+	boxId: string,
+	filename: string,
+	hash: string,
+	file: File
+): Promise<ImagesResponse> {
+	// First, try to find an existing image with this hash
+	const existing = await pb.collection('images').getList(1, 1, {
+		filter: `hash = "${hash}"`
+	});
+
+	if (existing.items.length > 0) {
+		const image = existing.items[0];
+		// Check if this box is already in the boxes array
+		if (!image.boxes.includes(boxId as any)) {
+			// Add this box to the boxes array
+			const updatedBoxes = [...image.boxes, boxId];
+			return pb.collection('images').update(image.id, { boxes: updatedBoxes as any });
+		}
+		return image;
+	}
+
+	// Create new image
+	return pb.collection('images').create({
+		boxes: [boxId],
+		original_filename: filename,
+		hash,
+		image_file: file
+	});
+}
+
+// Build a filename → URL map for a box's images
+export async function buildImageMap(pb: TypedPocketBase, boxId: string): Promise<Record<string, string>> {
+	const images = await getImagesForBox(pb, boxId);
+	const map: Record<string, string> = {};
+
+	for (const image of images) {
+		// Get the URL for the image file
+		const url = pb.files.getURL(image, image.image_file);
+		map[image.original_filename] = url;
+	}
+
+	return map;
 }

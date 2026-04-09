@@ -1,6 +1,6 @@
 import { browser } from '$app/environment';
 import { pb } from '$lib/pocketbase.svelte';
-import { getCards, getProgressForBox } from '$lib/api';
+import { getCards, getProgressForBox, buildImageMap } from '$lib/api';
 import { consumeStudyCards } from '$lib/study-store.svelte';
 import { error } from '@sveltejs/kit';
 import type { PageLoad } from './$types';
@@ -21,20 +21,28 @@ export const load: PageLoad = async ({ params, url }) => {
 		const levelsParam = url.searchParams.get('levels');
 		const selectedLevels = levelsParam ? levelsParam.split(',').map(Number) : [];
 
-		// Get all cards and progress
-		const [cards, progress] = await Promise.all([
+		// Get all cards, progress, and image map
+		const [cards, progress, imageMap] = await Promise.all([
 			getCards(pb as any, params.id),
 			getProgressForBox(pb as any, params.id),
+			buildImageMap(pb as any, params.id).catch(() => ({})), // Fail gracefully
 		]);
 
 		const progressMap = new Map(progress.map((p) => [p.card, p]));
 
-		// Filter cards by selected levels
+		// Filter cards by selected levels and replace image URLs
 		const filteredCards = cards
-			.map((card) => ({
-				card,
-				progress: progressMap.get(card.id) ?? null,
-			}))
+			.map((card) => {
+				const cardWithImages = {
+					...card,
+					front: replaceImageUrls(card.front ?? '', imageMap),
+					back: replaceImageUrls(card.back ?? '', imageMap)
+				};
+				return {
+					card: cardWithImages,
+					progress: progressMap.get(card.id) ?? null,
+				};
+			})
 			.filter(({ progress }) => {
 				// If no levels selected, include all cards
 				if (selectedLevels.length === 0) return true;
@@ -49,3 +57,14 @@ export const load: PageLoad = async ({ params, url }) => {
 		error(404, 'Box not found');
 	}
 };
+
+function replaceImageUrls(content: string, imageMap: Record<string, string>): string {
+	if (!content) return content;
+	return content.replace(/<img\s+src=["']([^"']+)["'][^>]*>/gi, (match, filename) => {
+		const url = imageMap[filename];
+		if (url) {
+			return match.replace(`src="${filename}"`, `src="${url}"`).replace(`src='${filename}'`, `src='${url}'`);
+		}
+		return match;
+	});
+}
