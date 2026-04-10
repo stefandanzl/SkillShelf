@@ -484,6 +484,7 @@
 			const updatedBoxes = [...item.image.boxes, boxId];
 			try {
 				await pb.collection('images').update(item.image.id, { boxes: updatedBoxes as any });
+				updatedImagesCount++;
 			} catch (e: any) {
 				// Log but continue - might already be added
 				console.warn('Failed to update image boxes:', e.message);
@@ -612,10 +613,60 @@
 				<p>Each row is one card. Front and back separated by a delimiter.</p>
 				<div class="help-box__examples">
 					<code>front;back</code>
-					<code>front,back</code>
+					<code>"front","back"</code>
 					<code>front&#9;back</code>
+					<code>"front";"back with ; semicolon"</code>
 				</div>
+				<p>
+					<strong>Tip:</strong> Always wrap fields in quotes to handle special characters (semicolons, commas, line breaks).
+				</p>
 				<p>First row can be a header (auto-detected if it contains "front", "back", "question", or "answer").</p>
+
+				<div class="help-box__ai-prompt">
+					<div class="help-box__ai-header">
+						<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+							<path d="M12 2a10 10 0 1 0 10 10H12V2z"></path>
+							<path d="M12 12L2.1 12a10 10 0 0 0 17.8 6.1"></path>
+							<path d="M12 2v10l9.9 6.1"></path>
+						</svg>
+						<span>AI Prompt Template</span>
+					</div>
+					<p class="help-box__ai-text">Copy this to ChatGPT/Claude to generate flashcards:</p>
+					<pre class="help-box__ai-code">Create _n_ flashcards about _YOUR_TOPIC_.
+
+Output format (CSV with semicolon delimiter):
+"front";"back"
+
+Rules:
+- Wrap ALL fields in double quotes
+- Use markdown for formatting (**bold**, lists, # Headings, ==highlighting==, tables  etc.)
+- For multi-line content, use actual line breaks (not \n or &lt;br&gt;)
+
+Example output:
+"front";"back"
+"What is photosynthesis?";"The process by which plants convert sunlight into energy"
+"List the steps";"1. Light absorption&#10;2. Water splitting&#10;3. Sugar production"</pre>
+					<button
+						class="help-box__copy-btn"
+						onclick={() =>
+							navigator.clipboard.writeText(`Create 10 flashcards about [YOUR TOPIC].
+
+Output format (CSV with semicolon delimiter):
+"front";"back"
+
+Rules:
+- Wrap ALL fields in double quotes
+- Use markdown for formatting (bold, lists, etc.)
+- For multi-line content, use actual line breaks (not \\n or <br>)
+- Don't include a header row
+
+Example output:
+"What is photosynthesis?";"The process by which plants convert sunlight into energy"
+"List the steps";"1. Light absorption\n2. Water splitting\n3. Sugar production"`)}
+					>
+						Copy Prompt
+					</button>
+				</div>
 			</div>
 		{/if}
 
@@ -889,7 +940,7 @@ Question 2;Answer 2"
 								<tr
 									class="preview-table__row"
 									class:preview-table__row--header={i === 0 && firstRowIsHeader}
-									class:preview-table__row--invalid={(!row.front && !row.frontImage) || (!row.back && !row.backImage)}
+									class:preview-table__row--invalid={!row.front || !row.back}
 								>
 									<td class="preview-table__cell preview-table__cell--num">
 										{#if i === 0 && firstRowIsHeader}
@@ -980,6 +1031,48 @@ Question 2;Answer 2"
 		font-size: var(--font-size-xs);
 		color: var(--color-text-primary);
 		font-family: monospace;
+	}
+	.help-box__ai-prompt {
+		margin-top: var(--space-md);
+		padding-top: var(--space-md);
+		border-top: 1px solid var(--color-border);
+	}
+	.help-box__ai-header {
+		display: flex;
+		align-items: center;
+		gap: var(--space-xs);
+		font-weight: 600;
+		color: var(--color-text-primary);
+		margin-bottom: var(--space-xs);
+	}
+	.help-box__ai-text {
+		font-size: var(--font-size-xs);
+		margin-bottom: var(--space-sm);
+	}
+	.help-box__ai-code {
+		background: var(--color-bg);
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius-sm);
+		padding: var(--space-sm);
+		font-size: var(--font-size-xs);
+		font-family: monospace;
+		white-space: pre-wrap;
+		word-break: break-word;
+		margin-bottom: var(--space-sm);
+		overflow-x: auto;
+	}
+	.help-box__copy-btn {
+		background: var(--color-primary);
+		color: white;
+		border: none;
+		border-radius: var(--radius-sm);
+		padding: var(--space-xs) var(--space-sm);
+		font-size: var(--font-size-xs);
+		cursor: pointer;
+		transition: opacity 0.2s;
+	}
+	.help-box__copy-btn:hover {
+		opacity: 0.9;
 	}
 
 	/* ── Drop zone ───────────────────────────────────────────────────────────── */

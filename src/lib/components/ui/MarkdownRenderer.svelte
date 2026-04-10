@@ -23,14 +23,22 @@
 			html(token) {
 				return token.text
 					.replace(/<span[^>]*class="arithmatex"[^>]*>([\s\S]*?)<\/span>/g, (_, inner) => inner.trim())
-					.replace(/\\\[([\s\S]*?)\\\]/g, (_, m) =>
-						`<div class="math-block">${katex.renderToString(m.trim(), { displayMode: true, throwOnError: false })}</div>`)
+					.replace(
+						/\\\[([\s\S]*?)\\\]/g,
+						(_, m) =>
+							`<div class="math-block">${katex.renderToString(m.trim(), { displayMode: true, throwOnError: false })}</div>`
+					)
 					.replace(/\\\(([\s\S]*?)\\\)/g, (_, m) =>
-						katex.renderToString(m.trim(), { displayMode: false, throwOnError: false }))
-					.replace(/\$\$([\s\S]*?)\$\$/g, (_, m) =>
-						`<div class="math-block">${katex.renderToString(m.trim(), { displayMode: true, throwOnError: false })}</div>`)
+						katex.renderToString(m.trim(), { displayMode: false, throwOnError: false })
+					)
+					.replace(
+						/\$\$([\s\S]*?)\$\$/g,
+						(_, m) =>
+							`<div class="math-block">${katex.renderToString(m.trim(), { displayMode: true, throwOnError: false })}</div>`
+					)
 					.replace(/\$(?!\$)((?:\\.|[^\\\n])*?(?:\\.|[^\\\n$]))\$(?=[\s?!.,：，。？！]|$)/g, (_, m) =>
-						katex.renderToString(m.trim(), { displayMode: false, throwOnError: false }));
+						katex.renderToString(m.trim(), { displayMode: false, throwOnError: false })
+					);
 			}
 		}
 	});
@@ -158,6 +166,11 @@
 	.markdown-content :global(p) {
 		margin: 0.5em 0;
 	}
+	/* Align paragraphs containing bullet points to the left */
+	.markdown-content :global(p:has(br)) {
+		align-self: flex-start;
+		text-align: left;
+	}
 	.markdown-content :global(code) {
 		background: var(--color-surface-alt);
 		padding: 0.2em 0.4em;
@@ -236,8 +249,9 @@
 		background-color: var(--color-surface-alt);
 		font-weight: bold;
 	}
-	.markdown-content :global(mark) {
-		background-color: #b6aa40;
+	.markdown-content :global(mark),
+	.markdown-content :global(span[style*='background-color']) {
+		background-color: #b6aa40 !important;
 		color: var(--color-text-primary);
 		padding: 0.1em 0.2em;
 		border-radius: 2px;
