@@ -5,7 +5,8 @@
 	import TopBar from '$lib/components/ui/TopBar.svelte';
 	import PillButton from '$lib/components/ui/PillButton.svelte';
 	import { pb } from '$lib/pocketbase.svelte';
-	import { createCard, getCards, findOrCreateImage, buildImageMap } from '$lib/api';
+	import { createCard, getCards, findOrCreateImages, type ToCreate, type ToUpdate } from '$lib/api';
+	import type { TypedPocketBase } from '$lib/pocketbase-types';
 
 	const boxId = $derived(page.params.id);
 
@@ -39,6 +40,9 @@
 	let importComplete = $state(false);
 	let createdCount = $state(0);
 	let skippedCount = $state(0);
+	let uploadedImagesCount = $state(0); // Number of images uploaded
+	let importStatus = $state(''); // Current phase: "Uploading images...", "Creating cards..."
+	let updatedImagesCount = $state(0);
 
 	// ── File input ref ──────────────────────────────────────────────────────────
 	let fileInput: HTMLInputElement | undefined = $state();
@@ -338,6 +342,9 @@
 
 	const cardCount = $derived(validCards.length);
 
+	let doneOperationsCount = $derived(createdCount + skippedCount + uploadedImagesCount + updatedImagesCount);
+	let totalOperationsCount = $derived(validCards.length + (ankiImages ? ankiImages.size : 0));
+
 	// ── File handling ───────────────────────────────────────────────────────────
 	async function processFile(file: File) {
 		fileError = '';
@@ -449,6 +456,41 @@
 		autoDetectHeader(textInput);
 	}
 
+	async function uploadImages(toCreate: ToCreate) {
+		// Batch create: new images - process sequentially to be safe
+		for (const item of toCreate) {
+			const ext = item.filename.split('.').pop()?.toLowerCase() || 'png';
+			const blob = new Blob([item.data], { type: `image/${ext === 'jpg' ? 'jpeg' : ext}` });
+			const file = new File([blob], item.filename, { type: `image/${ext === 'jpg' ? 'jpeg' : ext}` });
+			try {
+				await pb.collection('images').create({
+					boxes: [boxId],
+					original_filename: item.filename,
+					hash: item.hash,
+					image_file: file
+				});
+				uploadedImagesCount++;
+			} catch (e: any) {
+				// Log but continue - might be duplicate
+				console.warn(`Failed to create image ${item.filename}:`, e.message);
+			}
+		}
+	}
+
+	async function updateImages(toUpdate: ToUpdate) {
+		// Batch update: add box to existing images (only if needed)
+		// Process sequentially to avoid auto-cancellation
+		for (const item of toUpdate) {
+			const updatedBoxes = [...item.image.boxes, boxId];
+			try {
+				await pb.collection('images').update(item.image.id, { boxes: updatedBoxes as any });
+			} catch (e: any) {
+				// Log but continue - might already be added
+				console.warn('Failed to update image boxes:', e.message);
+			}
+		}
+	}
+
 	// ── Import ──────────────────────────────────────────────────────────────────
 	async function handleImport() {
 		if (importing || validCards.length === 0) return;
@@ -458,60 +500,65 @@
 		importComplete = false;
 		createdCount = 0;
 		skippedCount = 0;
-
+		uploadedImagesCount = 0;
+		importStatus = '';
+		pb.autoCancellation(true);
 		try {
-			// Upload images first (for Anki imports)
+			// Upload images first (for Anki imports) - parallel hash calculation
 			if (ankiImages && ankiImages.size > 0) {
-				for (const [filename, data] of ankiImages) {
+				importStatus = `Uploading ${ankiImages.size} image${ankiImages.size > 1 ? 's' : ''}...`;
+				// Calculate ALL hashes in parallel (huge speedup!)
+				const hashPromises = Array.from(ankiImages.entries()).map(async ([filename, data]) => {
 					const ext = filename.split('.').pop()?.toLowerCase() || 'png';
 					const file = new File([data], filename, { type: `image/${ext === 'jpg' ? 'jpeg' : ext}` });
 					const hash = await calculateMD5(file);
-					await findOrCreateImage(pb as any, boxId, filename, hash, file);
-				}
-			}
-
-			// Build image map for replacing image URLs
-			const imageMap = await buildImageMap(pb as any, boxId);
-
-			// Function to replace image URLs in card content
-			function replaceImageUrls(content: string): string {
-				return content.replace(/<img\s+src=["']([^"']+)["'][^>]*>/gi, (match, filename) => {
-					const url = imageMap[filename];
-					if (url) {
-						// Replace the filename with the actual URL, keep other attributes
-						return match.replace(`src="${filename}"`, `src="${url}"`).replace(`src='${filename}'`, `src='${url}'`);
-					}
-					return match; // Keep original if URL not found
+					return { filename, hash, data };
 				});
+				const imagesToUpload = await Promise.all(hashPromises);
+
+				// Single batch request with one hash lookup
+				const { toCreate, toUpdate } = await findOrCreateImages(pb, boxId, imagesToUpload);
+				await uploadImages(toCreate);
+				await updateImages(toUpdate);
+				// uploadedImagesCount = ankiImages?.size ?? 0;
 			}
 
 			// Fetch existing cards for deduplication
-			const existingCards = await getCards(pb as any, boxId);
+			const existingCards = await getCards(pb, boxId);
 			const existingSignatures = new Set(existingCards.map((c) => `${c.front ?? ''}|||${c.back ?? ''}`));
 
-			for (let i = 0; i < validCards.length; i++) {
-				const card = validCards[i];
+			// Batch card creation
+			importStatus = `Creating ${validCards.length} card${validCards.length > 1 ? 's' : ''}...`;
+			const BATCH_SIZE = 1;
+			for (let i = 0; i < validCards.length; i += BATCH_SIZE) {
+				const batch = validCards.slice(i, i + BATCH_SIZE);
+				const createPromises = batch.map(async (card) => {
+					const signature = `${card.front}|||${card.back}`;
 
-				// Replace image URLs before creating card
-				const front = replaceImageUrls(card.front);
-				const back = replaceImageUrls(card.back);
-				const signature = `${front}|||${back}`;
+					if (existingSignatures.has(signature)) {
+						skippedCount++;
+						return null;
+					}
 
-				if (existingSignatures.has(signature)) {
-					skippedCount++;
-				} else {
-					await createCard(pb as any, boxId, { front, back });
+					const result = await createCard(pb, boxId, { front: card.front, back: card.back });
 					createdCount++;
 					existingSignatures.add(signature);
-				}
-				importProgress = i + 1;
+					return result;
+				});
+
+				await Promise.all(createPromises);
+				importProgress = Math.min(i + BATCH_SIZE, validCards.length);
 			}
+
 			importComplete = true;
-			importing = false;
+
 			await invalidateAll();
 		} catch (e: any) {
 			importError = `Import failed at card ${importProgress + 1}: ${e?.message ?? 'Unknown error'}`;
+		} finally {
+			pb.autoCancellation(false);
 			importing = false;
+			importStatus = '';
 		}
 	}
 
@@ -721,44 +768,6 @@ Question 2;Answer 2"
 				{/if}
 			</div>
 
-			<!-- Preview table -->
-			{#if allRows.length > 0}
-				<div class="preview-wrapper">
-					<table class="preview-table">
-						<thead>
-							<tr>
-								<th class="preview-table__th preview-table__th--num">#</th>
-								<th class="preview-table__th preview-table__th--front">Front</th>
-								<th class="preview-table__th preview-table__th--back">Back</th>
-							</tr>
-						</thead>
-						<tbody>
-							{#each allRows as row, i (i)}
-								<tr
-									class="preview-table__row"
-									class:preview-table__row--header={i === 0 && firstRowIsHeader}
-									class:preview-table__row--invalid={(!row.front && !row.frontImage) || (!row.back && !row.backImage)}
-								>
-									<td class="preview-table__cell preview-table__cell--num">
-										{#if i === 0 && firstRowIsHeader}
-											<span class="header-badge">H</span>
-										{:else}
-											{firstRowIsHeader ? i : i + 1}
-										{/if}
-									</td>
-									<td class="preview-table__cell preview-table__cell--front">
-										{row.front}
-									</td>
-									<td class="preview-table__cell preview-table__cell--back">
-										{row.back}
-									</td>
-								</tr>
-							{/each}
-						</tbody>
-					</table>
-				</div>
-			{/if}
-
 			<!-- Import error -->
 			{#if importError}
 				<p class="error-text">{importError}</p>
@@ -769,10 +778,15 @@ Question 2;Answer 2"
 				<div class="progress-bar">
 					<div
 						class="progress-bar__fill"
-						style="width: {cardCount > 0 ? (importProgress / cardCount) * 100 : 0}%"
+						style="width: {cardCount > 0 ? (doneOperationsCount / totalOperationsCount) * 100 : 0}%"
 					></div>
 				</div>
-				<p class="progress-text">Importing {importProgress} / {cardCount}...</p>
+				<p class="progress-text">{importStatus || 'Importing...'}</p>
+				{#if uploadedImagesCount > 0 && importProgress === 0}
+					<p class="progress-text-sub">{uploadedImagesCount} image{uploadedImagesCount === 1 ? '' : 's'} uploaded</p>
+				{:else}
+					<p class="progress-text-sub">{importProgress} / {cardCount} cards</p>
+				{/if}
 			{/if}
 
 			<!-- Import complete results -->
@@ -818,6 +832,28 @@ Question 2;Answer 2"
 							</span>
 						</div>
 					{/if}
+					{#if uploadedImagesCount > 0}
+						<div class="import-results__row">
+							<svg
+								width="20"
+								height="20"
+								viewBox="0 0 24 24"
+								fill="none"
+								stroke="currentColor"
+								stroke-width="2"
+								stroke-linecap="round"
+								stroke-linejoin="round"
+								class="import-results__icon import-results__icon--image"
+							>
+								<rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+								<circle cx="8.5" cy="8.5" r="1.5"></circle>
+								<polyline points="21 15 16 10 5 21"></polyline>
+							</svg>
+							<span class="import-results__text">
+								<strong>{uploadedImagesCount}</strong> image{uploadedImagesCount === 1 ? '' : 's'} uploaded
+							</span>
+						</div>
+					{/if}
 				</div>
 			{/if}
 
@@ -834,6 +870,44 @@ Question 2;Answer 2"
 				<div class="action-buttons">
 					<PillButton onclick={() => goto(`/boxes/${boxId}`)}>Done</PillButton>
 					<PillButton onclick={clearFile} variant="secondary">Import More</PillButton>
+				</div>
+			{/if}
+
+			<!-- Preview table -->
+			{#if allRows.length > 0}
+				<div class="preview-wrapper">
+					<table class="preview-table">
+						<thead>
+							<tr>
+								<th class="preview-table__th preview-table__th--num">#</th>
+								<th class="preview-table__th preview-table__th--front">Front</th>
+								<th class="preview-table__th preview-table__th--back">Back</th>
+							</tr>
+						</thead>
+						<tbody>
+							{#each allRows as row, i (i)}
+								<tr
+									class="preview-table__row"
+									class:preview-table__row--header={i === 0 && firstRowIsHeader}
+									class:preview-table__row--invalid={(!row.front && !row.frontImage) || (!row.back && !row.backImage)}
+								>
+									<td class="preview-table__cell preview-table__cell--num">
+										{#if i === 0 && firstRowIsHeader}
+											<span class="header-badge">H</span>
+										{:else}
+											{firstRowIsHeader ? i : i + 1}
+										{/if}
+									</td>
+									<td class="preview-table__cell preview-table__cell--front">
+										{row.front}
+									</td>
+									<td class="preview-table__cell preview-table__cell--back">
+										{row.back}
+									</td>
+								</tr>
+							{/each}
+						</tbody>
+					</table>
 				</div>
 			{/if}
 		{/if}
@@ -1280,6 +1354,9 @@ Question 2;Answer 2"
 	}
 	.import-results__text strong {
 		font-weight: 600;
+	}
+	.import-results__icon--image {
+		color: var(--color-primary);
 	}
 
 	/* ── Action buttons ───────────────────────────────────────────────────────── */

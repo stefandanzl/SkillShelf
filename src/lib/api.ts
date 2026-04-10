@@ -242,36 +242,46 @@ export async function getImagesForBox(pb: TypedPocketBase, boxId: string): Promi
 	return result.items;
 }
 
-export async function findOrCreateImage(
+export type ToCreate = Array<{ filename: string; hash: string; data: Uint8Array }>;
+export type ToUpdate = Array<{ image: ImagesResponse; data: Uint8Array; filename: string }>;
+
+// Batch version: upload multiple images with batched hash lookup requests
+export async function findOrCreateImages(
 	pb: TypedPocketBase,
 	boxId: string,
-	filename: string,
-	hash: string,
-	file: File
-): Promise<ImagesResponse> {
-	// First, try to find an existing image with this hash
-	const existing = await pb.collection('images').getList(1, 1, {
-		filter: `hash = "${hash}"`
-	});
+	images: Array<{ filename: string; hash: string; data: Uint8Array }>
+): Promise<{ toCreate: ToCreate; toUpdate: ToUpdate }> {
+	if (images.length === 0) return;
 
-	if (existing.items.length > 0) {
-		const image = existing.items[0];
-		// Check if this box is already in the boxes array
-		if (!image.boxes.includes(boxId as any)) {
-			// Add this box to the boxes array
-			const updatedBoxes = [...image.boxes, boxId];
-			return pb.collection('images').update(image.id, { boxes: updatedBoxes as any });
-		}
-		return image;
+	// Batch hash lookups into chunks of 50 to avoid filter length limit
+	const HASH_BATCH_SIZE = 50;
+	const allExisting: ImagesResponse[] = [];
+
+	for (let i = 0; i < images.length; i += HASH_BATCH_SIZE) {
+		const batch = images.slice(i, i + HASH_BATCH_SIZE);
+		const hashFilter = batch.map((img) => `hash = "${img.hash}"`).join(' || ');
+		const result = await pb.collection('images').getList(1, 500, {
+			filter: hashFilter
+		});
+		allExisting.push(...result.items);
 	}
 
-	// Create new image
-	return pb.collection('images').create({
-		boxes: [boxId],
-		original_filename: filename,
-		hash,
-		image_file: file
-	});
+	const existingHashes = new Map(allExisting.map((img) => [img.hash, img]));
+	const toCreate: ToCreate = [];
+	const toUpdate: ToUpdate = [];
+
+	for (const img of images) {
+		const existingImage = existingHashes.get(img.hash);
+		if (existingImage) {
+			// Check if box is already in the boxes array
+			if (!existingImage.boxes.includes(boxId as any)) {
+				toUpdate.push({ image: existingImage, data: img.data, filename: img.filename });
+			}
+		} else {
+			toCreate.push(img);
+		}
+	}
+	return { toCreate, toUpdate };
 }
 
 // Build a filename → URL map for a box's images
