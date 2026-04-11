@@ -17,6 +17,7 @@
 	let { data } = $props();
 
 	const boxId = $derived($page.params.id);
+	const isLoaded = $derived(data.loaded ?? false);
 
 	// Get user from pb auth store
 	const user = $derived(pb.authStore.record);
@@ -306,7 +307,7 @@
 	}
 </script>
 
-{#if done || queue.length === 0}
+{#if done || (queue.length === 0 && isLoaded)}
 	<div class="study study--done">
 		<TopBar showBack onback={() => goto(`/boxes/${boxId}`)}>
 			{#snippet center()}
@@ -342,7 +343,11 @@
 		<TopBar showBack onback={() => goto(`/boxes/${boxId}`)}>
 			{#snippet center()}
 				<span class="study__counter">
-					{currentIndex + 1}/{queue.length}
+					{#if isLoaded}
+						{currentIndex + 1}/{queue.length}
+					{:else}
+						{$t('study.loading_cards')}
+					{/if}
 				</span>
 			{/snippet}
 			{#snippet right()}

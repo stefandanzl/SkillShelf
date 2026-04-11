@@ -46,7 +46,8 @@
     "show_answer": "Show Answer",
     "correct": "Correct",
     "incorrect": "Incorrect",
-    "card_counter": "{current}/{total}"
+    "card_counter": "{current}/{total}",
+    "loading_cards": "Loading cards..."
   },
   "profile": {
     "title": "Profile",

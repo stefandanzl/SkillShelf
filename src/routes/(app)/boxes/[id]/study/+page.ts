@@ -7,13 +7,13 @@ import type { PageLoad } from './$types';
 
 export const load: PageLoad = async ({ params, url }) => {
 	if (!browser) {
-		return { dueCards: [], boxId: params.id };
+		return { dueCards: [], boxId: params.id, loaded: false };
 	}
 
 	// Use prefetched cards from box detail if available
 	const prefetched = consumeStudyCards();
 	if (prefetched) {
-		return { dueCards: prefetched, boxId: params.id };
+		return { dueCards: prefetched, boxId: params.id, loaded: true };
 	}
 
 	try {
@@ -51,7 +51,7 @@ export const load: PageLoad = async ({ params, url }) => {
 				return selectedLevels.includes(cardLevel);
 			});
 
-		return { dueCards: filteredCards, boxId: params.id, selectedLevels };
+		return { dueCards: filteredCards, boxId: params.id, selectedLevels, loaded: true };
 	} catch (err) {
 		console.error('Error loading study cards:', err);
 		error(404, 'Box not found');
