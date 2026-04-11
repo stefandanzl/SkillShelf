@@ -1,9 +1,10 @@
-import type { TypedPocketBase, UsersRecord } from './pocketbase-types';
+import type { TypedPocketBase } from './pocketbase-types';
 import type { ClientResponseError } from 'pocketbase';
 import { redirect, error, type RequestEvent } from '@sveltejs/kit';
 import PocketBase from 'pocketbase';
 import { browser, dev } from '$app/environment';
 import { env } from '$env/dynamic/public';
+import type { TypedAuthRecord } from './types';
 
 function createPocketBase(): TypedPocketBase {
 	const instance = new PocketBase(env.PUBLIC_POCKETBASE_URL) as TypedPocketBase;
@@ -35,7 +36,7 @@ export function syncAuthFromCookie(): Promise<void> {
 // CSR only — import only from .svelte files or other .svelte.ts modules
 export const pb = $state(createPocketBase());
 
-export const getAvatarUrl = (user: UsersRecord | null | undefined): string | null => {
+export const getAvatarUrl = (user: TypedAuthRecord | null | undefined): string | null => {
 	if (!user?.avatar) return null;
 	return pb.files.getURL(user, user.avatar);
 };
@@ -47,14 +48,14 @@ export const pbError = (e: unknown): never => {
 };
 
 export class Security {
-	private readonly user: UsersRecord | null;
+	private readonly user: TypedAuthRecord | null;
 
 	constructor(private readonly event: RequestEvent) {
 		this.user = event.locals.user ?? null;
 	}
 
 	isAuthenticated(): this {
-		if (!this.user) error(401, 'You are not signed in.');
+		if (!this.user) redirect(302, '/sign/in');
 		if (!this.user.verified) redirect(307, '/verify');
 		return this;
 	}

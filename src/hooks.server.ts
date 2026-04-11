@@ -6,6 +6,7 @@ import { dev } from '$app/environment';
 import { env } from '$env/dynamic/private';
 import { Security } from '$lib/pocketbase.svelte';
 import PocketBase from 'pocketbase';
+import type { TypedAuthRecord } from '$lib/types';
 
 export const handle: Handle = async ({ event, resolve }) => {
 	if (dev && event.url.pathname === '/.well-known/appspecific/com.chrome.devtools.json') {
@@ -25,7 +26,7 @@ export const handle: Handle = async ({ event, resolve }) => {
 	try {
 		if (event.locals.pb.authStore.isValid) {
 			await event.locals.pb.collection('users').authRefresh();
-			event.locals.user = event.locals.pb.authStore.model;
+			event.locals.user = event.locals.pb.authStore.record as TypedAuthRecord;
 		}
 	} catch (err) {
 		console.error('Error during PocketBase .authRefresh():', err); // Log the error
