@@ -19,7 +19,7 @@
 	const boxId = $derived($page.params.id);
 
 	// Get user from pb auth store
-	const user = $derived(pb.authStore.model as any);
+	const user = $derived(pb.authStore.record);
 
 	// User settings
 	interface UserSettings {
@@ -59,11 +59,20 @@
 	let queue = $state<{ card: CardsRecord; progress: CardProgressRecord | null }[]>([]);
 	let currentIndex = $state(0);
 	let flipped = $state(false);
-	let showResult = $state(false);
 	let done = $state(false);
 	let submitting = $state(false);
 	let flashcardRef: { triggerSwipe: (direction: 'left' | 'right' | 'down') => Promise<void> } | null = $state(null);
 	let starredOverrides = $state<Record<string, boolean>>({});
+
+	// Pending submission: card that was answered but not yet submitted to server
+	type PendingSubmission = {
+		card: CardsRecord;
+		progress: CardProgressRecord | null;
+		wasCorrect: boolean;
+		starOverride?: boolean;
+	};
+	let pendingSubmission: PendingSubmission | null = null;
+	let canUndo = $state(false);
 
 	// Initialize queue from dueCards
 	$effect(() => {
@@ -85,14 +94,12 @@
 
 	function showAnswer() {
 		flipped = true;
-		showResult = true;
 	}
 
 	function toggleFlip() {
 		if (done) return;
 		// If showing result, flip back to front; otherwise show answer
-		if (showResult) {
-			showResult = false;
+		if (flipped) {
 			flipped = false; // Also flip the card back to front
 		} else {
 			showAnswer();
@@ -110,19 +117,37 @@
 		if (!currentCard || submitting) return;
 		submitting = true;
 
-		// Start swipe animation and API request in parallel for faster feel
+		// First, submit any pending submission from the previous card
+		if (pendingSubmission) {
+			try {
+				await submitAnswer(
+					pb,
+					pendingSubmission.card,
+					pendingSubmission.progress,
+					pendingSubmission.wasCorrect,
+					pendingSubmission.starOverride
+				);
+			} catch (e) {
+				console.error('Failed to submit pending answer', e);
+			}
+			pendingSubmission = null;
+		}
+
+		// Store current answer as pending (don't submit yet)
+		const starOverride = currentCard.id in starredOverrides ? starredOverrides[currentCard.id] : undefined;
+		pendingSubmission = {
+			card: currentCard,
+			progress: currentProgress,
+			wasCorrect,
+			starOverride
+		};
+		canUndo = true;
+
+		// Start swipe animation
 		let animationPromise: Promise<void> | null = null;
 		if (!skipAnimation && flashcardRef) {
 			const direction = wasCorrect ? 'right' : 'left';
 			animationPromise = flashcardRef.triggerSwipe(direction);
-		}
-
-		// Submit answer immediately (don't wait for animation)
-		try {
-			const starOverride = currentCard.id in starredOverrides ? starredOverrides[currentCard.id] : undefined;
-			await submitAnswer(pb as any, currentCard, currentProgress, wasCorrect, starOverride);
-		} catch (e) {
-			console.error('Failed to submit answer', e);
 		}
 
 		// Wait for animation to complete before showing next card
@@ -134,13 +159,26 @@
 		nextCard();
 	}
 
+	async function handleUndo() {
+		if (!pendingSubmission || !canUndo) return;
+
+		// Clear the pending submission (it won't be sent to server)
+		pendingSubmission = null;
+		canUndo = false;
+
+		// Go back to the previous card
+		if (currentIndex > 0) {
+			currentIndex -= 1;
+		}
+		flipped = false;
+	}
+
 	async function handleSkip() {
 		if (!currentCard || submitting || isLast) return;
 		submitting = true;
 
 		// Reset flip state FIRST so new card starts fresh
 		flipped = false;
-		showResult = false;
 
 		// Start swipe animation
 		const animationPromise = flashcardRef?.triggerSwipe('down') ?? Promise.resolve();
@@ -163,18 +201,34 @@
 		}
 		currentIndex += 1;
 		flipped = false;
-		showResult = false;
 	}
 
 	async function finishSession() {
-		await invalidateAll();
-		goto(`/boxes/${boxId}`);
+		console.log('finishSession called, boxId:', boxId);
+		// Flush any pending submission before leaving
+		if (pendingSubmission) {
+			console.log('Submitting pending card...');
+			try {
+				await submitAnswer(
+					pb,
+					pendingSubmission.card,
+					pendingSubmission.progress,
+					pendingSubmission.wasCorrect,
+					pendingSubmission.starOverride
+				);
+			} catch (e) {
+				console.error('Failed to submit final pending answer', e);
+			}
+			pendingSubmission = null;
+		}
+		console.log('Navigating to:', `/boxes/${boxId}`);
+		await goto(`/boxes/${boxId}`);
 	}
 
 	// Register hotkeys on mount
 	onMount(() => {
 		// Load user's custom hotkeys first
-		const user = pb.authStore.record as any;
+		const user = pb.authStore.record;
 		if (user?.hotkeys) {
 			loadUserHotkeys(user.hotkeys);
 		}
@@ -230,7 +284,6 @@
 				if (currentIndex > 0 && !done) {
 					currentIndex -= 1;
 					flipped = false;
-					showResult = false;
 				}
 			})
 		];
@@ -241,17 +294,14 @@
 	});
 
 	async function handleSwipeLeft() {
-		// if (!showResult) return;
 		await handleAnswer(false, false);
 	}
 
 	async function handleSwipeRight() {
-		// if (!showResult) return;
 		await handleAnswer(true, false);
 	}
 
 	async function handleSwipeDown() {
-		// if (!showResult) return;
 		await handleSkip();
 	}
 </script>
@@ -296,25 +346,47 @@
 				</span>
 			{/snippet}
 			{#snippet right()}
-				<IconButton title="Card grid" onclick={toggleShowButtons}>
-					<svg
-						width="20"
-						height="20"
-						viewBox="0 0 24 24"
-						fill="none"
-						stroke="currentColor"
-						stroke-width="2"
-						stroke-linecap="round"
-						stroke-linejoin="round"
+				<div class="study__topbar-actions">
+					<IconButton
+						title="Undo last answer"
+						onclick={canUndo ? handleUndo : undefined}
+						variant="default"
+						disabled={!canUndo}
 					>
-						<rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect
-							x="3"
-							y="14"
-							width="7"
-							height="7"
-						></rect><rect x="14" y="14" width="7" height="7"></rect>
-					</svg>
-				</IconButton>
+						<svg
+							width="20"
+							height="20"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+						>
+							<path d="M3 7v6h6"></path>
+							<path d="M21 17a9 9 0 0 0-9-9 9 9 0 0 0-6 2.3L3 13"></path>
+						</svg>
+					</IconButton>
+					<IconButton title="Card grid" onclick={toggleShowButtons}>
+						<svg
+							width="20"
+							height="20"
+							viewBox="0 0 24 24"
+							fill="none"
+							stroke="currentColor"
+							stroke-width="2"
+							stroke-linecap="round"
+							stroke-linejoin="round"
+						>
+							<rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect
+								x="3"
+								y="14"
+								width="7"
+								height="7"
+							></rect><rect x="14" y="14" width="7" height="7"></rect>
+						</svg>
+					</IconButton>
+				</div>
 			{/snippet}
 		</TopBar>
 
@@ -343,7 +415,7 @@
 		</div>
 
 		<div class="study__actions {showButtons ? '' : 'hidden'}">
-			{#if !showResult}
+			{#if !flipped}
 				<PillButton
 					onclick={() => {
 						showAnswer();
@@ -532,5 +604,10 @@
 
 	.hidden {
 		display: none;
+	}
+
+	.study__topbar-actions {
+		display: flex;
+		gap: var(--space-xs);
 	}
 </style>
