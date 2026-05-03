@@ -118,20 +118,13 @@
 		if (!currentCard || submitting) return;
 		submitting = true;
 
-		// First, submit any pending submission from the previous card
+		// Fire previous submission concurrently with the animation (don't block on network)
 		if (pendingSubmission) {
-			try {
-				await submitAnswer(
-					pb,
-					pendingSubmission.card,
-					pendingSubmission.progress,
-					pendingSubmission.wasCorrect,
-					pendingSubmission.starOverride
-				);
-			} catch (e) {
-				console.error('Failed to submit pending answer', e);
-			}
+			const prev = pendingSubmission;
 			pendingSubmission = null;
+			submitAnswer(pb, prev.card, prev.progress, prev.wasCorrect, prev.starOverride).catch((e) =>
+				console.error('Failed to submit pending answer', e)
+			);
 		}
 
 		// Store current answer as pending (don't submit yet)
