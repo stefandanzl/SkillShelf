@@ -11,6 +11,9 @@ WORKDIR /app
 COPY --from=deps /app/node_modules ./node_modules
 COPY . .
 
+ARG PUBLIC_POCKETBASE_URL
+ENV PUBLIC_POCKETBASE_URL=$PUBLIC_POCKETBASE_URL
+
 # Build the application with the Node.js adapter
 RUN npm run build
 
