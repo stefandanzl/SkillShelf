@@ -48,7 +48,41 @@
 	let fileInput: HTMLInputElement | undefined = $state();
 
 	// ── Delimiter detection ─────────────────────────────────────────────────────
-	const HEADER_KEYWORDS = ['front', 'back', 'question', 'answer', 'frage', 'antwort', 'vorderseite', 'rückseite'];
+	// Maps recognized header cell names (lowercased) to the card field they refer to.
+	// When a header row is present, columns are mapped by these names (order-independent).
+	type CardField = 'front' | 'back' | 'question_number' | 'topic';
+	const HEADER_SYNONYMS: Record<string, CardField> = {
+		// front
+		front: 'front',
+		question: 'front',
+		frage: 'front',
+		vorderseite: 'front',
+		// back
+		back: 'back',
+		answer: 'back',
+		antwort: 'back',
+		rückseite: 'back',
+		rueckseite: 'back',
+		// question number (source reference, e.g. "1", "1.4", "3a")
+		number: 'question_number',
+		nr: 'question_number',
+		'nr.': 'question_number',
+		no: 'question_number',
+		'#': 'question_number',
+		q: 'question_number',
+		qno: 'question_number',
+		q_number: 'question_number',
+		question_number: 'question_number',
+		nummer: 'question_number',
+		// topic / chapter / category
+		topic: 'topic',
+		category: 'topic',
+		chapter: 'topic',
+		unit: 'topic',
+		thema: 'topic',
+		kapitel: 'topic'
+	};
+	const HEADER_KEYWORDS = Object.keys(HEADER_SYNONYMS);
 
 	// Proper CSV parser that handles quoted fields and escaped quotes
 	function parseCSVLine(line: string, delimiter: string): string[] {
@@ -292,16 +326,24 @@
 	// ── Parsed data ─────────────────────────────────────────────────────────────
 	const activeDelimiter = $derived(getDelimiterChar(delimiterChoice, fileContent));
 
-	type RowData = { front: string; back: string };
+	type RowData = { front: string; back: string; question_number?: string; topic?: string };
 
 	const allRows = $derived.by(() => {
-		if (ankiRows !== null) return swapAnkiFields ? ankiRows.map((r) => ({ front: r.back, back: r.front })) : ankiRows;
+		if (ankiRows !== null)
+			return ankiRows.map((r): RowData =>
+				swapAnkiFields ? { front: r.back, back: r.front } : { front: r.front, back: r.back }
+			);
 		if (!fileContent) return [];
 
 		const lines = fileContent.split('\n').map((line) => line.replace(/\r$/, ''));
 		const rows: RowData[] = [];
 		let accumulated = '';
 		let insideQuote = false;
+
+		// Column index per field. Positional default is front=0, back=1.
+		// When a header row is present, this is rebuilt from the header cell names.
+		const fieldIndex: Partial<Record<CardField, number>> = { front: 0, back: 1 };
+		let headerProcessed = false;
 
 		for (const line of lines) {
 			let charIndex = 0;
@@ -321,10 +363,44 @@
 				if (trimmed) {
 					const parts = parseCSVLine(trimmed, activeDelimiter);
 					if (parts.length >= 2) {
-						rows.push({
-							front: (parts[0] ?? '').trim(),
-							back: (parts.slice(1).join(activeDelimiter) ?? '').trim()
-						});
+						// First complete row is the header when the toggle is on: map columns by name.
+						if (firstRowIsHeader && !headerProcessed) {
+							for (let i = 0; i < parts.length; i++) {
+								const field = HEADER_SYNONYMS[parts[i].trim().toLowerCase()];
+								if (field) fieldIndex[field] = i;
+							}
+							headerProcessed = true;
+						}
+
+						if (firstRowIsHeader && headerProcessed) {
+							// Header-driven mapping: only fields whose column was recognized are filled.
+							const at = (f: CardField) =>
+								fieldIndex[f] !== undefined ? (parts[fieldIndex[f] as number] ?? '').trim() : '';
+							rows.push({
+								front: at('front'),
+								back: at('back'),
+								question_number: at('question_number') || undefined,
+								topic: at('topic') || undefined
+							});
+						} else {
+							// Positional fallback. 2-column files keep legacy behaviour
+							// (back = everything after the first column). 3+ columns are
+							// mapped strictly: front, back, question_number, topic.
+							const front = (parts[0] ?? '').trim();
+							if (parts.length <= 2) {
+								rows.push({
+									front,
+									back: (parts.slice(1).join(activeDelimiter) ?? '').trim()
+								});
+							} else {
+								rows.push({
+									front,
+									back: (parts[1] ?? '').trim(),
+									question_number: (parts[2] ?? '').trim() || undefined,
+									topic: (parts.slice(3).join(activeDelimiter) ?? '').trim() || undefined
+								});
+							}
+						}
 					}
 				}
 				accumulated = '';
@@ -339,6 +415,10 @@
 	const cards = $derived(firstRowIsHeader ? allRows.slice(1) : allRows);
 
 	const validCards = $derived(cards.filter((c) => c.front.length > 0 && c.back.length > 0));
+
+	// Whether any data row carries info fields — drives optional preview columns.
+	const hasQuestionNumber = $derived(cards.some((c) => c.question_number));
+	const hasTopic = $derived(cards.some((c) => c.topic));
 
 	const cardCount = $derived(validCards.length);
 
@@ -370,8 +450,8 @@
 			return;
 		}
 
-		if (ext !== 'csv' && ext !== 'txt') {
-			fileError = 'Only .csv, .txt, and .apkg files are supported.';
+		if (ext !== 'csv' && ext !== 'txt' && ext !== 'md') {
+			fileError = 'Only .csv, .txt, .md, and .apkg files are supported.';
 			return;
 		}
 		if (file.size > 5 * 1024 * 1024) {
@@ -541,7 +621,12 @@
 						return null;
 					}
 
-					const result = await createCard(pb, boxId, { front: card.front, back: card.back });
+					const result = await createCard(pb, boxId, {
+						front: card.front,
+						back: card.back,
+						question_number: card.question_number,
+						topic: card.topic
+					});
 					createdCount++;
 					existingSignatures.add(signature);
 					return result;
@@ -621,6 +706,17 @@
 					<strong>Tip:</strong> Always wrap fields in quotes to handle special characters (semicolons, commas, line breaks).
 				</p>
 				<p>First row can be a header (auto-detected if it contains "front", "back", "question", or "answer").</p>
+				<p>Header names are flexible — accepted synonyms: front = front/question/frage; back = back/answer/antwort; number = number/nr/no/#/q/nummer; topic = topic/chapter/category/unit/thema</p>
+				<p>
+					<strong>Optional columns:</strong> Add a question number and a topic to each card. With a header
+					row, name the columns e.g. <code>number</code>/<code>nr</code>/<code>#</code> and
+					<code>topic</code>/<code>chapter</code>/<code>category</code> (order doesn't matter). Without a
+					header, they are read positionally as the 3rd and 4th columns:
+				</p>
+				<div class="help-box__examples">
+					<code>"front";"back";"1";"Arithmetic"</code>
+					<code>number;front;back;topic</code>
+				</div>
 
 				<div class="help-box__ai-prompt">
 					<div class="help-box__ai-header">
@@ -634,35 +730,43 @@
 					<p class="help-box__ai-text">Copy this to ChatGPT/Claude to generate flashcards:</p>
 					<pre class="help-box__ai-code">Create _n_ flashcards about _YOUR_TOPIC_.
 
-Output format (CSV with semicolon delimiter):
-"front";"back"
+Output format (CSV with semicolon delimiter, first row is a header):
+number;front;back;topic
 
 Rules:
 - Wrap ALL fields in double quotes
+- "number" and "topic" are OPTIONAL — leave a value empty or drop the whole column if not needed
+- Column order is up to you — columns are mapped by their header name
+- "number" = original question number (e.g. 1, 1.4, 3a); empty if none
+- "topic" = short chapter/category label; empty if none
 - Use markdown for formatting (**bold**, lists, # Headings, ==highlighting==, tables  etc.)
 - For multi-line content, use actual line breaks (not \n or &lt;br&gt;)
 
 Example output:
-"front";"back"
-"What is photosynthesis?";"The process by which plants convert sunlight into energy"
-"List the steps";"1. Light absorption&#10;2. Water splitting&#10;3. Sugar production"</pre>
+number;front;back;topic
+"1";"What is photosynthesis?";"The process by which plants convert sunlight into energy";"Biology"
+"2";"List the steps";"1. Light absorption&#10;2. Water splitting&#10;3. Sugar production";"Biology"</pre>
 					<button
 						class="help-box__copy-btn"
 						onclick={() =>
 							navigator.clipboard.writeText(`Create 10 flashcards about [YOUR TOPIC].
 
-Output format (CSV with semicolon delimiter):
-"front";"back"
+Output format (CSV with semicolon delimiter, first row is a header):
+number;front;back;topic
 
 Rules:
 - Wrap ALL fields in double quotes
+- "number" and "topic" are OPTIONAL — leave a value empty or drop the whole column if not needed
+- Column order is up to you — columns are mapped by their header name
+- "number" = original question number (e.g. 1, 1.4, 3a); empty if none
+- "topic" = short chapter/category label; empty if none
 - Use markdown for formatting (bold, lists, etc.)
 - For multi-line content, use actual line breaks (not \\n or <br>)
-- Don't include a header row
 
 Example output:
-"What is photosynthesis?";"The process by which plants convert sunlight into energy"
-"List the steps";"1. Light absorption\n2. Water splitting\n3. Sugar production"`)}
+number;front;back;topic
+"1";"What is photosynthesis?";"The process by which plants convert sunlight into energy";"Biology"
+"2";"List the steps";"1. Light absorption\n2. Water splitting\n3. Sugar production";"Biology"`)}
 					>
 						Copy Prompt
 					</button>
@@ -700,11 +804,11 @@ Example output:
 					<polyline points="7 10 12 15 17 10"></polyline>
 					<line x1="12" y1="15" x2="12" y2="3"></line>
 				</svg>
-				<p class="drop-zone__text">Drag & drop a CSV, TXT, or APKG file here</p>
+				<p class="drop-zone__text">Drag & drop a CSV, TXT, MD, or APKG file here</p>
 				<p class="drop-zone__subtext">or tap to browse</p>
 			</div>
 
-			<input bind:this={fileInput} type="file" accept=".csv,.txt,.apkg" onchange={handleFileInput} class="sr-only" />
+			<input bind:this={fileInput} type="file" accept=".csv,.txt,.md,.apkg" onchange={handleFileInput} class="sr-only" />
 
 			<!-- Text input area -->
 			<div class="text-input-area">
@@ -933,6 +1037,12 @@ Question 2;Answer 2"
 								<th class="preview-table__th preview-table__th--num">#</th>
 								<th class="preview-table__th preview-table__th--front">Front</th>
 								<th class="preview-table__th preview-table__th--back">Back</th>
+								{#if hasQuestionNumber}
+									<th class="preview-table__th preview-table__th--info">No.</th>
+								{/if}
+								{#if hasTopic}
+									<th class="preview-table__th preview-table__th--info">Topic</th>
+								{/if}
 							</tr>
 						</thead>
 						<tbody>
@@ -955,6 +1065,16 @@ Question 2;Answer 2"
 									<td class="preview-table__cell preview-table__cell--back">
 										{row.back}
 									</td>
+									{#if hasQuestionNumber}
+										<td class="preview-table__cell preview-table__cell--info">
+											{row.question_number ?? ''}
+										</td>
+									{/if}
+									{#if hasTopic}
+										<td class="preview-table__cell preview-table__cell--info">
+											{row.topic ?? ''}
+										</td>
+									{/if}
 								</tr>
 							{/each}
 						</tbody>
@@ -1362,6 +1482,12 @@ Question 2;Answer 2"
 	}
 	.preview-table__cell--back {
 		background: color-mix(in srgb, #6bc77a 10%, transparent);
+	}
+	.preview-table__th--info,
+	.preview-table__cell--info {
+		max-width: 160px;
+		color: var(--color-text-secondary);
+		font-size: var(--font-size-xs);
 	}
 
 	.header-badge {

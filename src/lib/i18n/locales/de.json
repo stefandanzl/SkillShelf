@@ -40,7 +40,11 @@
     "back_label": "Rückseite",
     "back_placeholder": "Inhalt der Rückseite",
     "delete_button": "Karte löschen",
-    "level_prefix": "Stufe"
+    "level_prefix": "Stufe",
+    "question_number_label": "Fragenummer",
+    "question_number_placeholder": "z. B. 1, 1.4, 3a",
+    "topic_label": "Thema",
+    "topic_placeholder": "z. B. Arithmetik, Kapitel 2"
   },
   "study": {
     "show_answer": "Antwort zeigen",

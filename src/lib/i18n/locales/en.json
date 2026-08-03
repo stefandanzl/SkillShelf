@@ -40,7 +40,11 @@
     "back_label": "Back",
     "back_placeholder": "Enter back content here",
     "delete_button": "Delete Card",
-    "level_prefix": "Level"
+    "level_prefix": "Level",
+    "question_number_label": "Question No.",
+    "question_number_placeholder": "e.g. 1, 1.4, 3a",
+    "topic_label": "Topic",
+    "topic_placeholder": "e.g. Arithmetic, Chapter 2"
   },
   "study": {
     "show_answer": "Show Answer",

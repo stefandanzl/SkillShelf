@@ -112,20 +112,22 @@ export async function getCards(pb: TypedPocketBase, boxId: string): Promise<Card
 export async function createCard(
 	pb: TypedPocketBase,
 	boxId: string,
-	data: { front: string; back: string }
+	data: { front: string; back: string; question_number?: string; topic?: string }
 ): Promise<CardsResponse> {
 	return pb.collection('cards').create({
 		box: boxId,
 		front: data.front,
 		back: data.back,
-		sort_order: Date.now()
+		sort_order: Date.now(),
+		...(data.question_number?.trim() ? { question_number: data.question_number.trim() } : {}),
+		...(data.topic?.trim() ? { topic: data.topic.trim() } : {})
 	});
 }
 
 export async function updateCard(
 	pb: TypedPocketBase,
 	id: string | undefined,
-	data: { front?: string; back?: string }
+	data: { front?: string; back?: string; question_number?: string; topic?: string }
 ): Promise<CardsResponse> {
 	if (!id) {
 		throw new Error('id empty: ' + id);

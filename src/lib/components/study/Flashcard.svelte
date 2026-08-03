@@ -10,6 +10,8 @@
 		starred?: boolean;
 		isLast?: boolean;
 		enableMarkdown?: boolean;
+		questionNumber?: string;
+		topic?: string;
 		onswipeleft?: () => void;
 		onswiperight?: () => void;
 		onswipedown?: () => void;
@@ -24,12 +26,18 @@
 		starred = false,
 		isLast,
 		enableMarkdown = true,
+		questionNumber,
+		topic,
 		onswipeleft,
 		onswiperight,
 		onswipedown,
 		onflip,
 		ontogglestar
 	}: Props = $props();
+
+	// Optional card info caption (e.g. "Arithmetic · 12"), shown inline with the star.
+	const cardInfo = $derived([topic, questionNumber].filter(Boolean).join(' · '));
+	const hasInfo = $derived(cardInfo.length > 0);
 
 	let dragX = $state(0);
 	let dragY = $state(0);
@@ -193,31 +201,34 @@
 			: 0}deg) translateX({dragX * flippedCoeff}px) translateY({dragY}px)"
 	>
 		<div class="card-face card-front">
-			<button
-				class="card-face__star"
-				class:card-face__star--active={starred}
-				onpointerdown={(e) => e.stopPropagation()}
-				onclick={(e) => {
-					e.stopPropagation();
-					ontogglestar?.();
-				}}
-				aria-label="Toggle star"
-			>
-				<svg
-					width="18"
-					height="18"
-					viewBox="0 0 24 24"
-					fill="none"
-					stroke="currentColor"
-					stroke-width="2"
-					stroke-linecap="round"
-					stroke-linejoin="round"
+			<div class="card-face__header">
+				{#if hasInfo}<span class="card-face__info">{cardInfo}</span>{/if}
+				<button
+					class="card-face__star"
+					class:card-face__star--active={starred}
+					onpointerdown={(e) => e.stopPropagation()}
+					onclick={(e) => {
+						e.stopPropagation();
+						ontogglestar?.();
+					}}
+					aria-label="Toggle star"
 				>
-					<polygon
-						points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
-					></polygon>
-				</svg>
-			</button>
+					<svg
+						width="18"
+						height="18"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+					>
+						<polygon
+							points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
+						></polygon>
+					</svg>
+				</button>
+			</div>
 			<div class="card-face__content"><MarkdownRenderer content={front} {enableMarkdown} /></div>
 			<div class="card-face__footer">
 				<button class="card-face__tts" aria-label="Text to speech">
@@ -239,31 +250,34 @@
 			</div>
 		</div>
 		<div class="card-face card-back">
-			<button
-				class="card-face__star"
-				class:card-face__star--active={starred}
-				onpointerdown={(e) => e.stopPropagation()}
-				onclick={(e) => {
-					e.stopPropagation();
-					ontogglestar?.();
-				}}
-				aria-label="Toggle star"
-			>
-				<svg
-					width="18"
-					height="18"
-					viewBox="0 0 24 24"
-					fill="none"
-					stroke="currentColor"
-					stroke-width="2"
-					stroke-linecap="round"
-					stroke-linejoin="round"
+			<div class="card-face__header">
+				{#if hasInfo}<span class="card-face__info">{cardInfo}</span>{/if}
+				<button
+					class="card-face__star"
+					class:card-face__star--active={starred}
+					onpointerdown={(e) => e.stopPropagation()}
+					onclick={(e) => {
+						e.stopPropagation();
+						ontogglestar?.();
+					}}
+					aria-label="Toggle star"
 				>
-					<polygon
-						points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
-					></polygon>
-				</svg>
-			</button>
+					<svg
+						width="18"
+						height="18"
+						viewBox="0 0 24 24"
+						fill="none"
+						stroke="currentColor"
+						stroke-width="2"
+						stroke-linecap="round"
+						stroke-linejoin="round"
+					>
+						<polygon
+							points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"
+						></polygon>
+					</svg>
+				</button>
+			</div>
 			<div class="card-face__content"><MarkdownRenderer content={back} {enableMarkdown} /></div>
 			<div class="card-face__footer">
 				<button class="card-face__tts" aria-label="Text to speech">
@@ -368,10 +382,26 @@
 		font-size: var(--font-size-sm);
 		color: var(--color-text-secondary);
 	}
+	.card-face__header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		gap: var(--space-sm);
+		width: 100%;
+	}
+	.card-face__info {
+		font-size: var(--font-size-xs);
+		font-weight: 600;
+		color: var(--color-text-secondary);
+		text-transform: uppercase;
+		letter-spacing: 0.05em;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
 	.card-face__star {
-		position: absolute;
-		top: var(--space-md);
-		right: var(--space-md);
+		flex-shrink: 0;
+		margin-left: auto;
 		width: 32px;
 		height: 32px;
 		border-radius: 50%;

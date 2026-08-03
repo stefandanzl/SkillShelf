@@ -12,6 +12,8 @@
 
   let front = $state('');
   let back = $state('');
+  let questionNumber = $state('');
+  let topic = $state('');
   let saving = $state(false);
   let saveError = $state('');
 
@@ -22,7 +24,12 @@
     saving = true;
     saveError = '';
     try {
-      await createCard(pb as any, boxId, { front: front.trim(), back: back.trim() });
+      await createCard(pb as any, boxId, {
+        front: front.trim(),
+        back: back.trim(),
+        question_number: questionNumber.trim() || undefined,
+        topic: topic.trim() || undefined
+      });
       await invalidateAll();
       goto(`/boxes/${boxId}`);
     } catch (e: any) {
@@ -89,6 +96,27 @@
       </div>
     </div>
 
+    <div class="card-create__info-row">
+      <div class="card-create__field">
+        <label class="card-create__label" for="card-qno">{$t('card.question_number_label')}</label>
+        <input
+          id="card-qno"
+          class="card-create__input"
+          placeholder={$t('card.question_number_placeholder')}
+          bind:value={questionNumber}
+        />
+      </div>
+      <div class="card-create__field">
+        <label class="card-create__label" for="card-topic">{$t('card.topic_label')}</label>
+        <input
+          id="card-topic"
+          class="card-create__input"
+          placeholder={$t('card.topic_placeholder')}
+          bind:value={topic}
+        />
+      </div>
+    </div>
+
     {#if saveError}<p class="card-create__error">{saveError}</p>{/if}
     <PillButton onclick={handleSave} disabled={!canSave || saving}>
       {saving ? 'Saving…' : $t('card.add_title')}
@@ -133,6 +161,26 @@
   .card-create__textarea:focus {
     border-color: var(--color-primary);
     outline: none;
+  }
+  .card-create__input {
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    padding: var(--space-sm) var(--space-md);
+    color: var(--color-text-primary);
+    width: 100%;
+    line-height: 1.5;
+  }
+  .card-create__input:focus {
+    border-color: var(--color-primary);
+    outline: none;
+  }
+  .card-create__info-row {
+    display: flex;
+    gap: var(--space-md);
+  }
+  .card-create__info-row .card-create__field {
+    flex: 1;
   }
   .card-create__preview {
     background: var(--color-surface);

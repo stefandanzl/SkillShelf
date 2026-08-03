@@ -399,6 +399,8 @@
 						back={currentCard.back}
 						level={currentProgress?.level ?? 1}
 						starred={currentStarred}
+						questionNumber={currentCard.question_number}
+						topic={currentCard.topic}
 						{flipped}
 						{isLast}
 						{enableMarkdown}

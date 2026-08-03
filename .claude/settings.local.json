@@ -3,7 +3,8 @@
 		"allow": [
 			"Bash(npm run:*)",
 			"Bash(ls \"c:/PROJECTS/PROGRAMMIEREN/Apps/SkillShelf/**\")",
-			"mcp__plugin_svelte_svelte__svelte-autofixer"
+			"mcp__plugin_svelte_svelte__svelte-autofixer",
+			"Bash(grep -E: *)"
 		]
 	}
 }

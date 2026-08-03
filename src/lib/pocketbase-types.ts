@@ -15,7 +15,6 @@ export enum Collections {
 	CardProgress = "card_progress",
 	Cards = "cards",
 	Courses = "courses",
-	Images = "images",
 	StudySessions = "study_sessions",
 	Users = "users",
 }
@@ -147,7 +146,9 @@ export type CardsRecord = {
 	front?: string
 	front_image?: FileNameString
 	id: string
+	question_number?: string
 	sort_order?: number
+	topic?: string
 	updated: IsoAutoDateString
 }
 
@@ -159,17 +160,6 @@ export type CoursesRecord = {
 	name: string
 	updated: IsoAutoDateString
 	user?: RecordIdString
-}
-
-export type ImagesRecord = {
-	boxes: RecordIdString[]
-	created: IsoAutoDateString
-	description?: string
-	hash?: string
-	id: string
-	image_file: FileNameString
-	original_filename: string
-	updated: IsoAutoDateString
 }
 
 export type StudySessionsRecord = {
@@ -211,7 +201,6 @@ export type BoxesResponse<Texpand = unknown> = Required<BoxesRecord> & BaseSyste
 export type CardProgressResponse<Texpand = unknown> = Required<CardProgressRecord> & BaseSystemFields<Texpand>
 export type CardsResponse<Texpand = unknown> = Required<CardsRecord> & BaseSystemFields<Texpand>
 export type CoursesResponse<Texpand = unknown> = Required<CoursesRecord> & BaseSystemFields<Texpand>
-export type ImagesResponse<Texpand = unknown> = Required<ImagesRecord> & BaseSystemFields<Texpand>
 export type StudySessionsResponse<Texpand = unknown> = Required<StudySessionsRecord> & BaseSystemFields<Texpand>
 export type UsersResponse<Thotkeys = unknown, Tsettings = unknown, Texpand = unknown> = Required<UsersRecord<Thotkeys, Tsettings>> & AuthSystemFields<Texpand>
 
@@ -227,7 +216,6 @@ export type CollectionRecords = {
 	card_progress: CardProgressRecord
 	cards: CardsRecord
 	courses: CoursesRecord
-	images: ImagesRecord
 	study_sessions: StudySessionsRecord
 	users: UsersRecord
 }
@@ -242,7 +230,6 @@ export type CollectionResponses = {
 	card_progress: CardProgressResponse
 	cards: CardsResponse
 	courses: CoursesResponse
-	images: ImagesResponse
 	study_sessions: StudySessionsResponse
 	users: UsersResponse
 }

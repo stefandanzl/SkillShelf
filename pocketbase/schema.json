@@ -298,7 +298,7 @@
 			},
 			{
 				"hidden": false,
-				"id": "json3846545605",
+				"id": "json7031455681",
 				"maxSize": 0,
 				"name": "settings",
 				"presentable": false,
@@ -893,7 +893,6 @@
 				"id": "boxes_archived",
 				"name": "archived",
 				"presentable": false,
-				"primaryKey": false,
 				"required": false,
 				"system": false,
 				"type": "bool"
@@ -1274,6 +1273,34 @@
 				"presentable": false,
 				"system": false,
 				"type": "autodate"
+			},
+			{
+				"autogeneratePattern": "",
+				"hidden": false,
+				"id": "question_number",
+				"max": 0,
+				"min": 0,
+				"name": "question_number",
+				"pattern": "",
+				"presentable": false,
+				"primaryKey": false,
+				"required": false,
+				"system": false,
+				"type": "text"
+			},
+			{
+				"autogeneratePattern": "",
+				"hidden": false,
+				"id": "topic",
+				"max": 0,
+				"min": 0,
+				"name": "topic",
+				"pattern": "",
+				"presentable": false,
+				"primaryKey": false,
+				"required": false,
+				"system": false,
+				"type": "text"
 			}
 		],
 		"indexes": [],
@@ -1336,7 +1363,6 @@
 				"id": "courses_archived",
 				"name": "archived",
 				"presentable": false,
-				"primaryKey": false,
 				"required": false,
 				"system": false,
 				"type": "bool"

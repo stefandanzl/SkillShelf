@@ -15,6 +15,8 @@
 
 	let front = $derived(data.card?.front ?? '');
 	let back = $derived(data.card?.back ?? '');
+	let questionNumber = $derived(data.card?.question_number ?? '');
+	let topic = $derived(data.card?.topic ?? '');
 	const level = $derived(data.progress?.level ?? 1);
 	let starred = $state(false);
 	$effect(() => {
@@ -31,7 +33,12 @@
 		saving = true;
 		saveError = '';
 		try {
-			await updateCard(pb as any, cardId, { front: front.trim(), back: back.trim() });
+			await updateCard(pb as any, cardId, {
+				front: front.trim(),
+				back: back.trim(),
+				question_number: questionNumber.trim(),
+				topic: topic.trim()
+			});
 			// Persist starred state
 			if (data.progress) {
 				await pb.collection('card_progress').update(data.progress.id, { starred });
@@ -166,6 +173,27 @@
 			</div>
 		</div>
 
+		<div class="card-edit__info-row">
+			<div class="card-edit__field">
+				<label class="card-edit__label" for="card-qno">{$t('card.question_number_label')}</label>
+				<input
+					id="card-qno"
+					class="card-edit__input"
+					placeholder={$t('card.question_number_placeholder')}
+					bind:value={questionNumber}
+				/>
+			</div>
+			<div class="card-edit__field">
+				<label class="card-edit__label" for="card-topic">{$t('card.topic_label')}</label>
+				<input
+					id="card-topic"
+					class="card-edit__input"
+					placeholder={$t('card.topic_placeholder')}
+					bind:value={topic}
+				/>
+			</div>
+		</div>
+
 		{#if saveError}<p class="card-edit__error">{saveError}</p>{/if}
 		<PillButton onclick={handleSave} disabled={!canSave || saving}>
 			{saving ? 'Saving…' : $t('common.save')}
@@ -254,6 +282,26 @@
 	.card-edit__textarea:focus {
 		border-color: var(--color-primary);
 		outline: none;
+	}
+	.card-edit__input {
+		background: var(--color-surface);
+		border: 1px solid var(--color-border);
+		border-radius: var(--radius-md);
+		padding: var(--space-sm) var(--space-md);
+		color: var(--color-text-primary);
+		width: 100%;
+		line-height: 1.5;
+	}
+	.card-edit__input:focus {
+		border-color: var(--color-primary);
+		outline: none;
+	}
+	.card-edit__info-row {
+		display: flex;
+		gap: var(--space-md);
+	}
+	.card-edit__info-row .card-edit__field {
+		flex: 1;
 	}
 	.card-edit__preview {
 		background: var(--color-surface);
