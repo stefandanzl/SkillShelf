@@ -11,9 +11,6 @@
   },
   "box": {
     "add_title": "Neue Box hinzufügen",
-    "tab_manual": "Manuell",
-    "tab_ai": "Mit KI",
-    "tab_import": "Importieren",
     "name_label": "Box-Name",
     "name_placeholder": "Box-Name eingeben",
     "name_max": "0/80",
@@ -28,9 +25,7 @@
     "import": "Importieren",
     "export": "Exportieren",
     "rename": "Umbenennen",
-    "delete": "Löschen",
-    "ai_category": "Was möchtest du lernen?",
-    "create_with_ai": "Box mit KI erstellen"
+    "delete": "Löschen"
   },
   "card": {
     "add_title": "Neue Karte hinzufügen",
@@ -85,14 +80,6 @@
     "tutorial": "Tutorial",
     "faq": "FAQ",
     "news": "Neuigkeiten"
-  },
-  "import": {
-    "csv": "CSV",
-    "csv_desc": "Nur Text (keine Bilder)",
-    "excel": "Excel",
-    "excel_desc": "Nur Text (keine Bilder)",
-    "leitner": "Leitner-Container",
-    "leitner_desc": "Text und Bilder"
   },
   "common": {
     "cancel": "Abbrechen",

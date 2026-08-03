@@ -4,10 +4,9 @@
 	import IconButton from '$lib/components/ui/IconButton.svelte';
 	import CircularProgress from '$lib/components/ui/CircularProgress.svelte';
 	import Sheet from '$lib/components/ui/Sheet.svelte';
-	import SegmentedControl from '$lib/components/ui/SegmentedControl.svelte';
 	import PillButton from '$lib/components/ui/PillButton.svelte';
 	import CourseEdit from '$lib/components/ui/CourseEdit.svelte';
-	import { goto, invalidateAll } from '$app/navigation';
+	import { goto } from '$app/navigation';
 	import { pb } from '$lib/pocketbase.svelte';
 	import { createBox } from '$lib/api';
 	import CourseSelect from '$lib/components/ui/CourseSelect.svelte';
@@ -99,18 +98,11 @@
 
 	// ── Create box form ──────────────────────────────────────────────────────────
 	let showCreateBox = $state(false);
-	let createTab = $state('manual');
 	let newBoxName = $state('');
 	let selectedColor = $state<BoxesColorOptions>(BoxesColorOptions.blue);
 	let selectedCourseId = $state('');
 	let creating = $state(false);
 	let createError = $state('');
-
-	const createTabs = $derived([
-		{ value: 'manual', label: $t('box.tab_manual') },
-		{ value: 'ai', label: $t('box.tab_ai') },
-		{ value: 'import', label: $t('box.tab_import') }
-	]);
 
 	const username = $derived(
 		(pb.authStore.record as any)?.name ||
@@ -129,7 +121,7 @@
 		creating = true;
 		createError = '';
 		try {
-			await createBox(pb as any, {
+			const box = await createBox(pb as any, {
 				name: newBoxName.trim(),
 				color: selectedColor,
 				learn_direction: BoxesLearnDirectionOptions.front_to_back,
@@ -138,7 +130,7 @@
 			showCreateBox = false;
 			newBoxName = '';
 			selectedCourseId = '';
-			await invalidateAll();
+			await goto(`/boxes/${box.id}`);
 		} catch (e: any) {
 			createError = e?.message ?? 'Failed to create box';
 		} finally {
@@ -344,74 +336,43 @@
 <Sheet open={showCreateBox} title={$t('box.add_title')} onclose={() => (showCreateBox = false)}>
 	{#snippet children()}
 		<div class="create-box">
-			<SegmentedControl segments={createTabs} value={createTab} onchange={(v) => (createTab = v)} />
+			<div class="create-box__form">
+				<label class="create-box__label" for="box-name">{$t('box.name_label')}</label>
+				<input
+					id="box-name"
+					class="create-box__input"
+					type="text"
+					placeholder={$t('box.name_placeholder')}
+					bind:value={newBoxName}
+					maxlength={80}
+				/>
+				<div class="create-box__char-count">{newBoxName.length}/80</div>
 
-			{#if createTab === 'manual'}
-				<div class="create-box__form">
-					<label class="create-box__label" for="box-name">{$t('box.name_label')}</label>
-					<input
-						id="box-name"
-						class="create-box__input"
-						type="text"
-						placeholder={$t('box.name_placeholder')}
-						bind:value={newBoxName}
-						maxlength={80}
-					/>
-					<div class="create-box__char-count">{newBoxName.length}/80</div>
-
-					<label class="create-box__label">{$t('box.color')}</label>
-					<div class="color-picker">
-						{#each boxColors as c}
-							<button
-								class="color-dot"
-								class:color-dot--active={selectedColor === c}
-								style="background: {BOX_COLOR_MAP[c]}"
-								onclick={() => (selectedColor = c)}
-								aria-label={c}
-							></button>
-						{/each}
-					</div>
-
-					<label class="create-box__label" for="box-course">Course</label>
-					<CourseSelect
-						{courses}
-						value={selectedCourseId}
-						onchange={(id) => (selectedCourseId = id)}
-						oncreated={(c) => (courses = [...courses, c])}
-					/>
-				</div>
-				{#if createError}<p class="create-box__error">{createError}</p>{/if}
-				<PillButton onclick={handleAddBox} disabled={!newBoxName.trim() || creating}>
-					{creating ? 'Creating…' : $t('box.add_button')}
-				</PillButton>
-			{:else if createTab === 'ai'}
-				<div class="create-box__form">
-					<input class="create-box__input" type="text" placeholder={$t('box.ai_category')} />
-				</div>
-				<PillButton variant="disabled">{$t('box.create_with_ai')}</PillButton>
-			{:else if createTab === 'import'}
-				<div class="import-options">
-					{#each [{ icon: '📄', key: 'csv', descKey: 'csv_desc' }, { icon: '📊', key: 'excel', descKey: 'excel_desc' }, { icon: '📦', key: 'leitner', descKey: 'leitner_desc' }] as opt}
-						<button class="import-option">
-							<div class="import-option__icon">{opt.icon}</div>
-							<div class="import-option__info">
-								<span class="import-option__title">{$t(`import.${opt.key}`)}</span>
-								<span class="import-option__desc">{$t(`import.${opt.descKey}`)}</span>
-							</div>
-							<svg
-								width="18"
-								height="18"
-								viewBox="0 0 24 24"
-								fill="none"
-								stroke="currentColor"
-								stroke-width="2"
-								stroke-linecap="round"
-								stroke-linejoin="round"><polyline points="9 18 15 12 9 6"></polyline></svg
-							>
-						</button>
+				<label class="create-box__label">{$t('box.color')}</label>
+				<div class="color-picker">
+					{#each boxColors as c}
+						<button
+							class="color-dot"
+							class:color-dot--active={selectedColor === c}
+							style="background: {BOX_COLOR_MAP[c]}"
+							onclick={() => (selectedColor = c)}
+							aria-label={c}
+						></button>
 					{/each}
 				</div>
-			{/if}
+
+				<label class="create-box__label" for="box-course">Course</label>
+				<CourseSelect
+					{courses}
+					value={selectedCourseId}
+					onchange={(id) => (selectedCourseId = id)}
+					oncreated={(c) => (courses = [...courses, c])}
+				/>
+			</div>
+			{#if createError}<p class="create-box__error">{createError}</p>{/if}
+			<PillButton onclick={handleAddBox} disabled={!newBoxName.trim() || creating}>
+				{creating ? 'Creating…' : $t('box.add_button')}
+			</PillButton>
 		</div>
 	{/snippet}
 </Sheet>
@@ -705,44 +666,5 @@
 	}
 	.color-dot--active {
 		border-color: white;
-	}
-
-	.import-options {
-		display: flex;
-		flex-direction: column;
-		gap: var(--space-sm);
-	}
-	.import-option {
-		background: var(--color-surface-alt);
-		border-radius: var(--radius-md);
-		padding: var(--space-md);
-		display: flex;
-		align-items: center;
-		gap: var(--space-md);
-		width: 100%;
-		text-align: left;
-		cursor: pointer;
-		transition: background var(--transition-fast);
-		color: var(--color-text-primary);
-	}
-	.import-option:hover {
-		background: var(--color-border);
-	}
-	.import-option__icon {
-		font-size: 24px;
-	}
-	.import-option__info {
-		flex: 1;
-		display: flex;
-		flex-direction: column;
-		gap: 2px;
-	}
-	.import-option__title {
-		font-weight: 600;
-		font-size: var(--font-size-base);
-	}
-	.import-option__desc {
-		font-size: var(--font-size-sm);
-		color: var(--color-text-secondary);
 	}
 </style>

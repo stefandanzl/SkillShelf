@@ -11,9 +11,6 @@
   },
   "box": {
     "add_title": "Add New Box",
-    "tab_manual": "Manual",
-    "tab_ai": "With AI",
-    "tab_import": "Import",
     "name_label": "Box Name",
     "name_placeholder": "Enter box name here",
     "name_max": "0/80",
@@ -28,9 +25,7 @@
     "import": "Import",
     "export": "Export",
     "rename": "Rename",
-    "delete": "Delete",
-    "ai_category": "What do you want to learn?",
-    "create_with_ai": "Create Box with AI"
+    "delete": "Delete"
   },
   "card": {
     "add_title": "Add New Card",
@@ -85,14 +80,6 @@
     "tutorial": "Tutorial",
     "faq": "FAQ",
     "news": "News"
-  },
-  "import": {
-    "csv": "CSV",
-    "csv_desc": "Text content only (no images)",
-    "excel": "Excel",
-    "excel_desc": "Text content only (no images)",
-    "leitner": "Leitner Container",
-    "leitner_desc": "Text content and images"
   },
   "common": {
     "cancel": "Cancel",
