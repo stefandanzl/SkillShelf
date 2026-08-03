@@ -1,8 +1,8 @@
 <script lang="ts">
 	import { t } from '$lib/i18n';
 	import { page } from '$app/stores';
-	import { goto, invalidateAll } from '$app/navigation';
-	import { onMount } from 'svelte';
+	import { goto, invalidateAll, beforeNavigate } from '$app/navigation';
+	import { onMount, onDestroy } from 'svelte';
 	import TopBar from '$lib/components/ui/TopBar.svelte';
 	import IconButton from '$lib/components/ui/IconButton.svelte';
 	import ProgressBar from '$lib/components/ui/ProgressBar.svelte';
@@ -129,13 +129,25 @@
 
 		// Store current answer as pending (don't submit yet)
 		const starOverride = currentCard.id in starredOverrides ? starredOverrides[currentCard.id] : undefined;
-		pendingSubmission = {
-			card: currentCard,
-			progress: currentProgress,
-			wasCorrect,
-			starOverride
-		};
-		canUndo = true;
+
+		if (isLast) {
+			// Last card: submit immediately. Nothing to overlap with, and Undo isn't
+			// useful once the session ends — so don't hold it (it can't get lost on exit).
+			submitAnswer(pb, currentCard, currentProgress, wasCorrect, starOverride).catch((e) =>
+				console.error('Failed to submit final answer', e)
+			);
+			canUndo = false;
+		} else {
+			// Hold the current answer as pending — enables Undo and overlaps the
+			// network call with answering the next card.
+			pendingSubmission = {
+				card: currentCard,
+				progress: currentProgress,
+				wasCorrect,
+				starOverride
+			};
+			canUndo = true;
+		}
 
 		// Start swipe animation
 		let animationPromise: Promise<void> | null = null;
@@ -218,6 +230,29 @@
 		console.log('Navigating to:', `/boxes/${boxId}`);
 		await goto(`/boxes/${boxId}`);
 	}
+
+	// Flush the held answer to the server. Grabbed + cleared first so overlapping
+	// exit hooks (beforeNavigate, onDestroy) can't double-send. Fire-and-forget —
+	// an SPA navigation doesn't tear down JS, so the SDK call completes fine.
+	function flushPending() {
+		if (!pendingSubmission) return;
+		const pending = pendingSubmission;
+		pendingSubmission = null;
+		canUndo = false;
+		submitAnswer(pb, pending.card, pending.progress, pending.wasCorrect, pending.starOverride).catch((e) =>
+			console.error('Failed to submit pending answer on exit', e)
+		);
+	}
+
+	// Catch all in-app exits: back arrows (goto), link clicks, browser back/forward.
+	beforeNavigate(() => {
+		flushPending();
+	});
+
+	// Backstop for component unmount not triggered by a navigation hook.
+	onDestroy(() => {
+		flushPending();
+	});
 
 	// Register hotkeys on mount
 	onMount(() => {
