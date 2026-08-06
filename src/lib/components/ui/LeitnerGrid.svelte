@@ -13,14 +13,14 @@
 <div class="leitner-grid">
   {#each levels as level, i (level)}
     <div class="leitner-grid__col">
-      <span class="leitner-grid__count">{counts[i] ?? 0}</span>
+      <span class="leitner-grid__label">{level}</span>
       <button
         class="leitner-grid__btn"
         class:leitner-grid__btn--selected={selected.includes(level)}
         class:leitner-grid__btn--danger={dangerMode && selected.includes(level)}
         onclick={() => onselect?.(level)}
       >
-        {level}
+        {counts[i] ?? 0}
       </button>
     </div>
   {/each}
@@ -39,7 +39,7 @@
     align-items: center;
     gap: var(--space-xs);
   }
-  .leitner-grid__count {
+  .leitner-grid__label {
     font-size: var(--font-size-sm);
     color: var(--color-text-secondary);
     text-align: center;
